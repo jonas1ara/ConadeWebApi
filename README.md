@@ -1,12 +1,21 @@
 # ConadeWebApi
 
-Este repositorio contiene una solución de ASP.NET Core desarrollada en una arquitectura MVC, diseñada para administrar datos relacionados con el sistema CONADE. La solución incluye tres proyectos dentro de una arquitectura modular:
+Este repositorio contiene una solución de ASP.NET Core desarrollada en una arquitectura MVC, diseñada para administrar diferentes solicitudes en el sistema interno de la CONADE (Comisión Nacional de Cultura Física y Deporte).
+
+## Modelo de la Base de Datos
+
+A continuación se muestra el diagrama del modelo de la base de datos utilizado en este proyecto:
+
+![Diagrama del Modelo de la Base de Datos](GitHub/Diagram_Conade.png)
+
+
+## Estructura del proyecto 
+
+La solución incluye tres proyectos dentro de una arquitectura modular:
 
 1. **AccesoDatos**: Biblioteca de clases para gestionar modelos y operaciones relacionadas con la base de datos.
 2. **ClasesBase**: Biblioteca de clases base, como modelos de respuesta estándar.
 3. **ConadeWebApi**: API principal que implementa los controladores para interactuar con las entidades y operaciones.
-
-## Estructura del proyecto
 
 ### AccesoDatos
 
