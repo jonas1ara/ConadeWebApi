@@ -45,6 +45,13 @@ namespace ConadeWebApi.Controllers
                 return Unauthorized(new { Message = "Correo o contraseña incorrectos." });
             }
 
+            // Obtener la clave secreta de la configuración
+            var secretKey = conf["Jwt:Key"];
+            if (string.IsNullOrEmpty(secretKey))
+            {
+                return StatusCode(500, new { Message = "Clave secreta no configurada." });
+            }
+
             // Crear los claims que estarán dentro del token JWT
             var claims = new[]
             {
@@ -55,7 +62,7 @@ namespace ConadeWebApi.Controllers
             };
 
             // Asegurarse de que la clave secreta tiene una longitud adecuada (256 bits)
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(conf["Jwt:Key"]));  // Clave secreta desde la configuración
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));  // Clave secreta desde la configuración
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             // Crear el token JWT con los parámetros deseados

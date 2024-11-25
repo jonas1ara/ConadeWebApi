@@ -14,11 +14,19 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<UsuarioDao>();
 
-// Configuración JWT
+// Configuraciï¿½n JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]); // Asegúrate de que sea una cadena larga suficiente
+        // Obtener la clase secreta de la configuraciï¿½n y asegurarse de que no estï¿½ vacï¿½a
+        var secretKey = builder.Configuration["Jwt:Key"];
+        if (string.IsNullOrEmpty(secretKey))
+        {
+            throw new InvalidOperationException("La clave secreta JWT no estÃ¡ configurada.");
+        }
+
+
+        var key = Encoding.UTF8.GetBytes(secretKey); // Convertir la clave secreta en un array de bytes
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,

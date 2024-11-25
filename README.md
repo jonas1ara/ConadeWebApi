@@ -126,7 +126,7 @@ https://localhost:5001/swagger/index.html
 
 ### 6. Colaborar
 
-Si deseas contribuir al proyecto, sigue estos pasos:
+Si deseas colaborar al proyecto, sigue estos pasos:
 
  1. Haz un fork del repositorio.
  2. Crea una nueva rama (`git checkout -b feature/nueva-funcionalidad`).
