@@ -66,17 +66,26 @@ Los paquetes NuGet que se utilizan para manejar JWT son:
 
 Debido a que el proyecto utiliza .NET 8, los paquetes para manejar JWT deben estar en la version 8 para garantizar la compatibilidad.
 
+Los paquetes NuGet que se utilizan para ConfigurationBuilder son:
+
+ - `Microsoft.Extensions.Configuration`
+ - `Microsoft.Extensions.Configuration.Json`
+ - `Microsoft.Extensions.DependencyInjection`
+
 ### 3. Configurar la Base de Datos
 
-El proyecto utiliza **Entity Framework Core** para interactuar con la base de datos. Configura tu cadena de conexión en el archivo `appsettings.json` del proyecto `ConadeWebApi`.
+El proyecto utiliza **Entity Framework Core** para interactuar con la base de datos. Configura tu cadena de conexión en el archivo `appsettings.json` del proyecto `ConadeWebApi`, por el momento se encuentra configurado para SQL Server local, pero puedes cambiarlo a tu conveniencia en el archivo de configuración se agregan dos  `DevelopmentConnection` y `ProductionConnection` para que puedas cambiar entre ambientes de desarrollo y producción.
 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Database=ConadeDb;User Id=tu_usuario;Password=tu_contraseña;"
+    "DevelopmentConnection": "Server=hp\\SQLEXPRESS; Encrypt=False; TrustServerCertificate=True; Database=Conade1; Integrated Security=True",
+    "ProductionConnection": "Server=prod-server-name;Database=ConadeDb;User Id=your_user;Password=your_password;Encrypt=True;TrustServerCertificate=False"
   }
 }
 ```
+
+Recuerda cambiar el valor de `connectionString` por la cadena de conexión de tu base de datos, esta variable se encuentra en `AccesoDatos/Conade1Context.cs` en el método `OnConfiguring`.
 
 Para aplicar las migraciones para crear la base de datos, utiliza estos comandos:
 
