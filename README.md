@@ -6,7 +6,7 @@ Este repositorio contiene una solución de ASP.NET Core desarrollada en una arqu
 
 A continuación se muestra el diagrama del modelo de la base de datos utilizado en este proyecto:
 
-![Diagrama del Modelo de la Base de Datos](GitHub/Diagrama_Conade.png)
+![Diagrama del Modelo de la Base de Datos](GitHub/DiagramaConade.png)
 
 
 ## Estructura del proyecto 
