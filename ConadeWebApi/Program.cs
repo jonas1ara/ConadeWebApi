@@ -25,7 +25,6 @@ builder.Services.AddScoped<UsoInmobiliarioDao>();
 builder.Services.AddScoped<UsuarioDao>();
 builder.Services.AddScoped<ServicioPostalDao>();
 builder.Services.AddScoped<ServicioTransporteDao>();
-builder.Services.AddScoped<SolicitudDao>();
 
 
 
