@@ -1,6 +1,7 @@
 ﻿using AccesoDatos.Models.Conade1;
 using AccesoDatos.Models.Nominas;
 using AccesoDatos.Operations;
+using AccesoDatos.Service;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -25,6 +26,9 @@ builder.Services.AddScoped<UsoInmobiliarioDao>();
 builder.Services.AddScoped<UsuarioDao>();
 builder.Services.AddScoped<ServicioPostalDao>();
 builder.Services.AddScoped<ServicioTransporteDao>();
+builder.Services.AddScoped<EmailService>();
+// Registrar el servicio de correo
+
 
 
 

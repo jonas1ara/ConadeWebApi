@@ -1,5 +1,6 @@
 ﻿using AccesoDatos.Models.Conade1;
 using AccesoDatos.Models.Nominas;
+using AccesoDatos.Service;
 using ClasesBase.Respuestas;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -14,12 +15,14 @@ namespace AccesoDatos.Operations
     {
         private readonly Conade1Context _conadeContext;
         private readonly NominaOsimulacionContext _nominaContext;
+        private readonly EmailService _emailService;
 
         // Inyección de dependencias en el constructor
-        public UsuarioDao(Conade1Context conadeContext, NominaOsimulacionContext nominaContext)
+        public UsuarioDao(Conade1Context conadeContext, NominaOsimulacionContext nominaContext, EmailService emailService)
         {
             _conadeContext = conadeContext;
             _nominaContext = nominaContext;
+            _emailService = emailService;
         }
 
         public async Task<int?> CrearUsuarioAsync(
@@ -497,28 +500,80 @@ namespace AccesoDatos.Operations
 
                 int areaId = usuario.AreaId.Value;
 
-                // Determinar el tipo de solicitud (ServicioPostal, ServicioTransporte, UsoInmobiliario, Mantenimiento)
+                // Determinar el tipo de solicitud y el correo del solicitante
                 object solicitud = null;
+                string emailSolicitante = string.Empty;
 
+                // Obtener la solicitud y el correo del solicitante dependiendo del área
                 if (areaId == 1) // ServicioPostal
                 {
-                    solicitud = await _conadeContext.ServicioPostals
+                    var solicitudPostal = await _conadeContext.ServicioPostals
                         .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+                    if (solicitudPostal != null)
+                    {
+                        solicitud = solicitudPostal;
+                        // Obtener el correo del solicitante desde _nominaContext
+                        var usuarioSolicitante = await _conadeContext.Usuarios
+                                .FirstOrDefaultAsync(u => u.Id == solicitudPostal.UsuarioSolicitante);
+
+                        if (usuarioSolicitante != null)
+                        {
+                            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
+                            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
+                        }
+
+                    }
                 }
                 else if (areaId == 2) // ServicioTransporte
                 {
-                    solicitud = await _conadeContext.ServicioTransportes
+                    var solicitudTransporte = await _conadeContext.ServicioTransportes
                         .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+                    if (solicitudTransporte != null)
+                    {
+                        solicitud = solicitudTransporte;
+                        // Obtener el correo del solicitante desde _nominaContext
+                        var usuarioSolicitante = await _conadeContext.Usuarios
+                                .FirstOrDefaultAsync(u => u.Id == solicitudTransporte.UsuarioSolicitante);
+                        if (usuarioSolicitante != null)
+                        {
+                            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
+                            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
+                        }
+                    }
                 }
                 else if (areaId == 3) // UsoInmobiliario
                 {
-                    solicitud = await _conadeContext.UsoInmobiliarios
+                    var solicitudInmobiliario = await _conadeContext.UsoInmobiliarios
                         .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+                    if (solicitudInmobiliario != null)
+                    {
+                        solicitud = solicitudInmobiliario;
+                        // Obtener el correo del solicitante desde _nominaContext
+                        var usuarioSolicitante = await _conadeContext.Usuarios
+                            .FirstOrDefaultAsync(u => u.Id == solicitudInmobiliario.UsuarioSolicitante);
+                        if (usuarioSolicitante != null)
+                        {
+                            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
+                            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
+                        }
+                    }
                 }
                 else if (areaId == 4) // Mantenimiento
                 {
-                    solicitud = await _conadeContext.Mantenimientos
+                    var solicitudMantenimiento = await _conadeContext.Mantenimientos
                         .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+                    if (solicitudMantenimiento != null)
+                    {
+                        solicitud = solicitudMantenimiento;
+                        // Obtener el correo del solicitante desde _nominaContext
+                        var usuarioSolicitante = await _conadeContext.Usuarios
+                            .FirstOrDefaultAsync(u => u.Id == solicitudMantenimiento.UsuarioSolicitante);
+                        if (usuarioSolicitante != null)
+                        {
+                            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
+                            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
+                        }
+                    }
                 }
 
                 if (solicitud == null)
@@ -604,6 +659,20 @@ namespace AccesoDatos.Operations
 
                 respuesta.success = true;
                 respuesta.mensaje = accion == "Atender" ? "Solicitud atendida con éxito." : "Solicitud rechazada con éxito.";
+
+                // Enviar correo al solicitante
+                string subject = accion == "Atender" ? "Solicitud Atendida" : "Solicitud Rechazada";
+                string body = $"Hola, su solicitud con ID {idSolicitud} ha sido {accion.ToLower()}.\n\nObservaciones: {observaciones}";
+
+                try
+                {
+                    await _emailService.EnviarCorreoAsync(emailSolicitante, subject, body);
+                }
+                catch (Exception ex)
+                {
+                    respuesta.success = false;
+                    respuesta.mensaje += "\nError al enviar correo: " + ex.Message;
+                }
             }
             catch (Exception ex)
             {
@@ -614,6 +683,45 @@ namespace AccesoDatos.Operations
             return respuesta;
         }
 
+        // Método para obtener el usuario y empleado asociado
+        public async Task<dynamic> ObtenerCorreoConEmpleadoAsync(string nombreUsuario)
+        {
+            var usuario = await _conadeContext.Usuarios
+                .Where(u => u.NombreUsuario == nombreUsuario)
+                .FirstOrDefaultAsync();
+
+            if (usuario == null)
+            {
+                throw new Exception("Usuario no encontrado.");
+            }
+
+            var empleado = await _nominaContext.Empleados
+                .Where(e => e.IdEmpleado == usuario.IdEmpleado)
+                .FirstOrDefaultAsync();
+
+            if (empleado == null)
+            {
+                throw new Exception("Empleado no encontrado en la base de datos NominaO.");
+            }
+
+            return new
+            {
+                Usuario = new
+                {
+                    usuario.Id,
+                    usuario.Nombre,
+                    usuario.NombreUsuario,
+                    usuario.Rol,
+                    usuario.FechaCreacion,
+                    usuario.FechaUltimoAcceso
+                },
+                Empleado = new
+                {
+                    empleado.IdEmpleado,
+                    empleado.CorreoElectronico
+                }
+            };
+        }
 
 
     }
