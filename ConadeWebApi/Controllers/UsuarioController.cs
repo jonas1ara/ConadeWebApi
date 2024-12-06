@@ -246,20 +246,37 @@ namespace ConadeWebApi.Controllers
             }
         }
 
-        [HttpGet("AprobarRecharSolicitud")]
-        public async Task<IActionResult> AprobarRecharSolicitud(int idSolicitud, int usuarioId)
+        [HttpPost("AprobarRechazarSolicitud")]
+        public async Task<IActionResult> AprobarRechazarSolicitud(int idSolicitud, int usuarioId, string accion, string observaciones)
         {
-            var respuesta = await _dao.AprobarRechazarSolicitudAsync(idSolicitud, usuarioId);
-
-            if (respuesta.success)
+            // Validar los parámetros de entrada
+            if (idSolicitud <= 0 || usuarioId <= 0 || string.IsNullOrWhiteSpace(accion) || string.IsNullOrWhiteSpace(observaciones))
             {
-                return Ok(respuesta);
+                return BadRequest(new { success = false, mensaje = "Los parámetros proporcionados no son válidos." });
             }
-            else
+
+            try
             {
-                return NotFound(respuesta);
+                // Llamar al método de lógica de negocio
+                var respuesta = await _dao.AprobarRechazarSolicitudAsync(idSolicitud, usuarioId, accion, observaciones);
+
+                // Evaluar la respuesta
+                if (respuesta.success)
+                {
+                    return Ok(respuesta);
+                }
+                else
+                {
+                    return NotFound(respuesta);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Manejo de errores inesperados
+                return StatusCode(500, new { success = false, mensaje = "Ocurrió un error interno: " + ex.Message });
             }
         }
+
 
 
 

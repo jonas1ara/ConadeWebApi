@@ -266,10 +266,6 @@ namespace AccesoDatos.Operations
             return respuesta;
         }
 
-       
-
-
-
         public Respuesta EliminarUsuarioPorNombreUsuario(string nombreUsuario)
         {
             var respuesta = new Respuesta();
@@ -482,7 +478,7 @@ namespace AccesoDatos.Operations
 
 
 
-        public async Task<Respuesta> AprobarRechazarSolicitudAsync(int idSolicitud, int usuarioId)
+        public async Task<Respuesta> AprobarRechazarSolicitudAsync(int idSolicitud, int usuarioId, string accion, string observaciones)
         {
             var respuesta = new Respuesta();
 
@@ -502,32 +498,27 @@ namespace AccesoDatos.Operations
                 int areaId = usuario.AreaId.Value;
 
                 // Determinar el tipo de solicitud (ServicioPostal, ServicioTransporte, UsoInmobiliario, Mantenimiento)
-                // y buscar la solicitud correspondiente.
                 object solicitud = null;
 
-                // Buscar en la tabla de ServicioPostal
-                if (areaId == 1) // Suponiendo que el área 1 corresponde a ServicioPostal
+                if (areaId == 1) // ServicioPostal
                 {
                     solicitud = await _conadeContext.ServicioPostals
-                        .FirstOrDefaultAsync(s => s.Id == idSolicitud && s.AreaId == areaId);
+                        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
                 }
-                // Buscar en la tabla de ServicioTransporte
-                else if (areaId == 2) // Suponiendo que el área 2 corresponde a ServicioTransporte
+                else if (areaId == 2) // ServicioTransporte
                 {
                     solicitud = await _conadeContext.ServicioTransportes
-                        .FirstOrDefaultAsync(s => s.Id == idSolicitud && s.AreaId == areaId);
+                        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
                 }
-                // Buscar en la tabla de UsoInmobiliario
-                else if (areaId == 3) // Suponiendo que el área 3 corresponde a UsoInmobiliario
+                else if (areaId == 3) // UsoInmobiliario
                 {
                     solicitud = await _conadeContext.UsoInmobiliarios
-                        .FirstOrDefaultAsync(s => s.Id == idSolicitud && s.AreaId == areaId);
+                        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
                 }
-                // Buscar en la tabla de Mantenimiento
-                else if (areaId == 4) // Suponiendo que el área 4 corresponde a Mantenimiento
+                else if (areaId == 4) // Mantenimiento
                 {
                     solicitud = await _conadeContext.Mantenimientos
-                        .FirstOrDefaultAsync(s => s.Id == idSolicitud && s.AreaId == areaId);
+                        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
                 }
 
                 if (solicitud == null)
@@ -537,55 +528,82 @@ namespace AccesoDatos.Operations
                     return respuesta;
                 }
 
-                string accion = "Aprobar"; // Aprobar o Rechazar
-
-                // Cambiar el estado de la solicitud
-                if (accion == "Aprobar")
+                // Verificar el estado actual de la solicitud
+                string estadoActual = solicitud switch
                 {
-                    // Aprobar la solicitud
+                    ServicioPostal sp => sp.Estado,
+                    ServicioTransporte st => st.Estado,
+                    UsoInmobiliario ui => ui.Estado,
+                    Mantenimiento m => m.Estado,
+                    _ => null
+                };
+
+                if (estadoActual == "Atendida" || estadoActual == "Rechazada")
+                {
+                    respuesta.success = false;
+                    respuesta.mensaje = $"La solicitud ya ha sido {estadoActual.ToLower()}.";
+                    return respuesta;
+                }
+
+                // Cambiar el estado de la solicitud según la acción
+                if (accion == "Atender")
+                {
                     if (solicitud is ServicioPostal sp)
                     {
-                        sp.Estado = "Aprobada";
+                        sp.Estado = "Atendida";
+                        sp.Observaciones = observaciones;
                     }
                     else if (solicitud is ServicioTransporte st)
                     {
-                        st.Estado = "Aprobada";
+                        st.Estado = "Atendida";
+                        st.Observaciones = observaciones;
                     }
                     else if (solicitud is UsoInmobiliario ui)
                     {
-                        ui.Estado = "Aprobada";
+                        ui.Estado = "Atendida";
+                        ui.Observaciones = observaciones;
                     }
                     else if (solicitud is Mantenimiento m)
                     {
-                        m.Estado = "Aprobada";
+                        m.Estado = "Atendida";
+                        m.Observaciones = observaciones;
                     }
                 }
-                else
+                else if (accion == "Rechazar")
                 {
-                    // Rechazar la solicitud
                     if (solicitud is ServicioPostal sp)
                     {
                         sp.Estado = "Rechazada";
+                        sp.Observaciones = observaciones;
                     }
                     else if (solicitud is ServicioTransporte st)
                     {
                         st.Estado = "Rechazada";
+                        st.Observaciones = observaciones;
                     }
                     else if (solicitud is UsoInmobiliario ui)
                     {
                         ui.Estado = "Rechazada";
+                        ui.Observaciones = observaciones;
                     }
                     else if (solicitud is Mantenimiento m)
                     {
                         m.Estado = "Rechazada";
+                        m.Observaciones = observaciones;
                     }
+                }
+                else
+                {
+                    respuesta.success = false;
+                    respuesta.mensaje = "Acción no válida. Use 'Atender' o 'Rechazar'.";
+                    return respuesta;
                 }
 
                 // Guardar los cambios
                 await _conadeContext.SaveChangesAsync();
 
                 respuesta.success = true;
-                respuesta.mensaje = accion == "Aprobar" ? "Solicitud aprobada con éxito." : "Solicitud rechazada con éxito.";
+                respuesta.mensaje = accion == "Atender" ? "Solicitud atendida con éxito." : "Solicitud rechazada con éxito.";
             }
             catch (Exception ex)
             {
@@ -595,12 +613,6 @@ namespace AccesoDatos.Operations
 
             return respuesta;
         }
-
-
-
-
-
-
 
 
 
