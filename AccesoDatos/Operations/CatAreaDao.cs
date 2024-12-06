@@ -46,14 +46,14 @@ namespace AccesoDatos.Operations
         // Obtener todas las CatAreas
         public async Task<IQueryable<CatArea>> ObtenerCatAreasAsync()
         {
-            return _context.CatAreas.Include(ca => ca.AreaNavigation);
+            return _context.CatAreas.Include(ca => ca.Area);
         }
 
         // Obtener un CatArea por ID
         public async Task<CatArea> ObtenerCatAreaPorIdAsync(int id)
         {
             var catArea = await _context.CatAreas
-                .Include(ca => ca.AreaNavigation)
+                .Include(ca => ca.Area)
                 .FirstOrDefaultAsync(ca => ca.IdArea == id);
 
             if (catArea == null)

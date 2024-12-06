@@ -35,11 +35,11 @@ public partial class UsoInmobiliario
 
     public string? Observaciones { get; set; }
 
-    public virtual Area AreaSolicitanteNavigation { get; set; } = null!;
+    public virtual Area? Area { get; set; }
+
+    public virtual CatArea AreaSolicitanteNavigation { get; set; } = null!;
 
     public virtual CatArea Catalogo { get; set; } = null!;
 
     public virtual Usuario UsuarioSolicitanteNavigation { get; set; } = null!;
-
-    public virtual Area? Area { get; set; }
 }

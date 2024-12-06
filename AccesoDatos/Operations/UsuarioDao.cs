@@ -434,7 +434,6 @@ namespace AccesoDatos.Operations
 
                 int areaId = usuario.AreaId.Value;
 
-
                 // Diccionario de tablas de solicitudes
                 var tablasSolicitudes = new List<(object solicitud, string mensaje, IQueryable<object> tabla)>
                 {
@@ -448,8 +447,8 @@ namespace AccesoDatos.Operations
                 {
                     // Buscar la solicitud por id y el AreaId del administrador
                     var solicitudEncontrada = await tabla
-                        .FirstOrDefaultAsync(s => EF.Property<int>(s, "Id") == idSolicitud && EF.Property<int>(s, "AreaId") == areaId); // Cambié UsuarioSolicitante por AreaId
-
+                        .FirstOrDefaultAsync(s =>
+                            EF.Property<int>(s, "Id") == idSolicitud);
                     // Registra el resultado de la consulta
                     if (solicitudEncontrada != null)
                     {
@@ -467,10 +466,9 @@ namespace AccesoDatos.Operations
                     }
                 }
 
-
                 // Si no se encontró la solicitud en ninguna tabla o no pertenece al área del administrador
                 respuesta.success = false;
-                respuesta.mensaje = "No se encontró la solicitud para el área especificada o no pertenece al área del administrador.";
+                respuesta.mensaje = "El usuario pertenece al grupo de administradores.";
             }
             catch (Exception ex)
             {
@@ -480,6 +478,7 @@ namespace AccesoDatos.Operations
 
             return respuesta;
         }
+
 
 
 
