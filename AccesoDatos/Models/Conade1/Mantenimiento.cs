@@ -31,7 +31,7 @@ public partial class Mantenimiento
 
     public string Estado { get; set; } = null!;
 
-    public string Observaciones { get; set; } = null!;
+    public string? Observaciones { get; set; }
 
     public virtual Area? Area { get; set; }
 
