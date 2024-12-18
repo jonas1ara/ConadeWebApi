@@ -70,10 +70,7 @@ var app = builder.Build();
 
 
 app.UseSwagger();
-app.UseSwaggerUI(options =>
-{
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Macro Art API v1");
-});
+app.UseSwaggerUI();
 
 
 app.UseCors();

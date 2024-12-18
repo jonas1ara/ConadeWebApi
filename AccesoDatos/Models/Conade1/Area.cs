@@ -17,7 +17,7 @@ public partial class Area
     [JsonIgnore]
 
     public virtual ICollection<Mantenimiento> Mantenimientos { get; set; } = new List<Mantenimiento>();
-    
+
     [JsonIgnore]
 
     public virtual ICollection<ServicioPostal> ServicioPostals { get; set; } = new List<ServicioPostal>();

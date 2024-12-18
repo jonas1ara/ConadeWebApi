@@ -33,10 +33,10 @@ public partial class CatArea
     public virtual Area? Area { get; set; }
 
     [JsonIgnore]
+
     public virtual ICollection<Mantenimiento> MantenimientoAreaSolicitanteNavigations { get; set; } = new List<Mantenimiento>();
 
     [JsonIgnore]
-
     public virtual ICollection<Mantenimiento> MantenimientoCatalogos { get; set; } = new List<Mantenimiento>();
 
     [JsonIgnore]

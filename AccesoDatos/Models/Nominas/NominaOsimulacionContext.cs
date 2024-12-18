@@ -33,9 +33,7 @@ public partial class NominaOsimulacionContext : DbContext
     {
         modelBuilder.Entity<Empleado>(entity =>
         {
-            entity.HasKey(e => e.IdEmpleado).HasName("PK__Empleado__CE6D8B9E844FE293");
-
-            entity.ToTable("Empleado");
+            entity.HasKey(e => e.IdEmpleado).HasName("PK__Empleado__CE6D8B9E02919AB9");
 
             entity.Property(e => e.AfiliacionSindical).HasMaxLength(50);
             entity.Property(e => e.AlcaldiaDf).HasMaxLength(150);

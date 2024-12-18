@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
 
 namespace ConadeWebApi.Controllers
 {
@@ -160,6 +162,25 @@ namespace ConadeWebApi.Controllers
 
             return Ok(respuesta);
         }
+
+        [HttpGet("ListarEmpleados")]
+        public async Task<IActionResult> ListarEmpleados([FromQuery] string? nombre = null, [FromQuery] string? claveEmpleado = null)
+        {
+            try
+            {
+                // Llama al método en la capa de datos
+                var empleados = await _dao.ListarEmpleadosAsync(nombre, claveEmpleado);
+
+                // Devuelve los empleados encontrados en una respuesta exitosa
+                return Ok(new { success = true, mensaje = "Empleados listados correctamente.", obj = empleados });
+            }
+            catch (Exception ex)
+            {
+                // Manejo de errores
+                return StatusCode(500, new { success = false, mensaje = ex.Message });
+            }
+        }
+
 
         [HttpDelete("Eliminar")]
         public IActionResult EliminarUsuario(string nombreUsuario)

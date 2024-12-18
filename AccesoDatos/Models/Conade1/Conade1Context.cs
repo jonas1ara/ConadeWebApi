@@ -45,11 +45,11 @@ public partial class Conade1Context : DbContext
     {
         modelBuilder.Entity<Area>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Area__3214EC27C051A5B8");
+            entity.HasKey(e => e.Id).HasName("PK__Area__3214EC27012D1376");
 
             entity.ToTable("Area");
 
-            entity.HasIndex(e => e.Nombre, "UQ__Area__75E3EFCF0E482563").IsUnique();
+            entity.HasIndex(e => e.Nombre, "UQ__Area__75E3EFCFF59F358C").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.Nombre).HasMaxLength(255);
@@ -57,7 +57,7 @@ public partial class Conade1Context : DbContext
 
         modelBuilder.Entity<CatArea>(entity =>
         {
-            entity.HasKey(e => e.IdArea).HasName("PK__CatArea__2FC141AAED2FC54A");
+            entity.HasKey(e => e.IdArea).HasName("PK__CatArea__2FC141AA8A619632");
 
             entity.ToTable("CatArea", tb => tb.HasTrigger("TRG_CatArea"));
 
@@ -71,16 +71,16 @@ public partial class Conade1Context : DbContext
 
             entity.HasOne(d => d.Area).WithMany(p => p.CatAreas)
                 .HasForeignKey(d => d.AreaId)
-                .HasConstraintName("FK__CatArea__AreaId__38A457AD");
+                .HasConstraintName("FK__CatArea__AreaId__3E2826D9");
         });
 
         modelBuilder.Entity<Mantenimiento>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Mantenim__3214EC273D1FD9C6");
+            entity.HasKey(e => e.Id).HasName("PK__Mantenim__3214EC27F93F5B2E");
 
             entity.ToTable("Mantenimiento");
 
-            entity.HasIndex(e => e.NumeroDeSerie, "UQ__Mantenim__584C2CBE7BCE508F").IsUnique();
+            entity.HasIndex(e => e.NumeroDeSerie, "UQ__Mantenim__584C2CBE0226246D").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.AreaId).HasColumnName("AreaID");
@@ -98,31 +98,31 @@ public partial class Conade1Context : DbContext
 
             entity.HasOne(d => d.Area).WithMany(p => p.Mantenimientos)
                 .HasForeignKey(d => d.AreaId)
-                .HasConstraintName("FK__Mantenimi__AreaI__544C7222");
+                .HasConstraintName("FK__Mantenimi__AreaI__532343BF");
 
             entity.HasOne(d => d.AreaSolicitanteNavigation).WithMany(p => p.MantenimientoAreaSolicitanteNavigations)
                 .HasForeignKey(d => d.AreaSolicitante)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Mantenimi__AreaS__51700577");
+                .HasConstraintName("FK__Mantenimi__AreaS__5046D714");
 
             entity.HasOne(d => d.Catalogo).WithMany(p => p.MantenimientoCatalogos)
                 .HasForeignKey(d => d.CatalogoId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Mantenimi__Catal__53584DE9");
+                .HasConstraintName("FK__Mantenimi__Catal__522F1F86");
 
             entity.HasOne(d => d.UsuarioSolicitanteNavigation).WithMany(p => p.Mantenimientos)
                 .HasForeignKey(d => d.UsuarioSolicitante)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Mantenimi__Usuar__526429B0");
+                .HasConstraintName("FK__Mantenimi__Usuar__513AFB4D");
         });
 
         modelBuilder.Entity<ServicioPostal>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Servicio__3214EC273DFBF529");
+            entity.HasKey(e => e.Id).HasName("PK__Servicio__3214EC2730306A78");
 
             entity.ToTable("ServicioPostal");
 
-            entity.HasIndex(e => e.NumeroDeSerie, "UQ__Servicio__584C2CBE8B697D65").IsUnique();
+            entity.HasIndex(e => e.NumeroDeSerie, "UQ__Servicio__584C2CBED76AABDD").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.AreaId).HasColumnName("AreaID");
@@ -138,31 +138,31 @@ public partial class Conade1Context : DbContext
 
             entity.HasOne(d => d.Area).WithMany(p => p.ServicioPostals)
                 .HasForeignKey(d => d.AreaId)
-                .HasConstraintName("FK__ServicioP__AreaI__5ECA0095");
+                .HasConstraintName("FK__ServicioP__AreaI__5DA0D232");
 
             entity.HasOne(d => d.AreaSolicitanteNavigation).WithMany(p => p.ServicioPostalAreaSolicitanteNavigations)
                 .HasForeignKey(d => d.AreaSolicitante)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ServicioP__AreaS__5BED93EA");
+                .HasConstraintName("FK__ServicioP__AreaS__5AC46587");
 
             entity.HasOne(d => d.Catalogo).WithMany(p => p.ServicioPostalCatalogos)
                 .HasForeignKey(d => d.CatalogoId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ServicioP__Catal__5DD5DC5C");
+                .HasConstraintName("FK__ServicioP__Catal__5CACADF9");
 
             entity.HasOne(d => d.UsuarioSolicitanteNavigation).WithMany(p => p.ServicioPostals)
                 .HasForeignKey(d => d.UsuarioSolicitante)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ServicioP__Usuar__5CE1B823");
+                .HasConstraintName("FK__ServicioP__Usuar__5BB889C0");
         });
 
         modelBuilder.Entity<ServicioTransporte>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Servicio__3214EC27A06DA30E");
+            entity.HasKey(e => e.Id).HasName("PK__Servicio__3214EC270250EB30");
 
             entity.ToTable("ServicioTransporte");
 
-            entity.HasIndex(e => e.NumeroDeSerie, "UQ__Servicio__584C2CBEF4143FD3").IsUnique();
+            entity.HasIndex(e => e.NumeroDeSerie, "UQ__Servicio__584C2CBEC089FCC2").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.AreaId).HasColumnName("AreaID");
@@ -180,31 +180,31 @@ public partial class Conade1Context : DbContext
 
             entity.HasOne(d => d.Area).WithMany(p => p.ServicioTransportes)
                 .HasForeignKey(d => d.AreaId)
-                .HasConstraintName("FK__ServicioT__AreaI__69478F08");
+                .HasConstraintName("FK__ServicioT__AreaI__681E60A5");
 
             entity.HasOne(d => d.AreaSolicitanteNavigation).WithMany(p => p.ServicioTransporteAreaSolicitanteNavigations)
                 .HasForeignKey(d => d.AreaSolicitante)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ServicioT__AreaS__666B225D");
+                .HasConstraintName("FK__ServicioT__AreaS__6541F3FA");
 
             entity.HasOne(d => d.Catalogo).WithMany(p => p.ServicioTransporteCatalogos)
                 .HasForeignKey(d => d.CatalogoId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ServicioT__Catal__68536ACF");
+                .HasConstraintName("FK__ServicioT__Catal__672A3C6C");
 
             entity.HasOne(d => d.UsuarioSolicitanteNavigation).WithMany(p => p.ServicioTransportes)
                 .HasForeignKey(d => d.UsuarioSolicitante)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ServicioT__Usuar__675F4696");
+                .HasConstraintName("FK__ServicioT__Usuar__66361833");
         });
 
         modelBuilder.Entity<UsoInmobiliario>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__UsoInmob__3214EC275C95DEA8");
+            entity.HasKey(e => e.Id).HasName("PK__UsoInmob__3214EC27574D3805");
 
             entity.ToTable("UsoInmobiliario");
 
-            entity.HasIndex(e => e.NumeroDeSerie, "UQ__UsoInmob__584C2CBEFB7B7B5E").IsUnique();
+            entity.HasIndex(e => e.NumeroDeSerie, "UQ__UsoInmob__584C2CBE5BA03F9E").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.AreaId).HasColumnName("AreaID");
@@ -219,27 +219,27 @@ public partial class Conade1Context : DbContext
 
             entity.HasOne(d => d.Area).WithMany(p => p.UsoInmobiliarios)
                 .HasForeignKey(d => d.AreaId)
-                .HasConstraintName("FK__UsoInmobi__AreaI__49CEE3AF");
+                .HasConstraintName("FK__UsoInmobi__AreaI__48A5B54C");
 
             entity.HasOne(d => d.AreaSolicitanteNavigation).WithMany(p => p.UsoInmobiliarioAreaSolicitanteNavigations)
                 .HasForeignKey(d => d.AreaSolicitante)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__UsoInmobi__AreaS__46F27704");
+                .HasConstraintName("FK__UsoInmobi__AreaS__45C948A1");
 
             entity.HasOne(d => d.Catalogo).WithMany(p => p.UsoInmobiliarioCatalogos)
                 .HasForeignKey(d => d.CatalogoId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__UsoInmobi__Catal__48DABF76");
+                .HasConstraintName("FK__UsoInmobi__Catal__47B19113");
 
             entity.HasOne(d => d.UsuarioSolicitanteNavigation).WithMany(p => p.UsoInmobiliarios)
                 .HasForeignKey(d => d.UsuarioSolicitante)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__UsoInmobi__Usuar__47E69B3D");
+                .HasConstraintName("FK__UsoInmobi__Usuar__46BD6CDA");
         });
 
         modelBuilder.Entity<Usuario>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Usuario__3214EC2703F61044");
+            entity.HasKey(e => e.Id).HasName("PK__Usuario__3214EC27E0B861C4");
 
             entity.ToTable("Usuario");
 
@@ -256,7 +256,7 @@ public partial class Conade1Context : DbContext
 
             entity.HasOne(d => d.Area).WithMany(p => p.Usuarios)
                 .HasForeignKey(d => d.AreaId)
-                .HasConstraintName("FK__Usuario__AreaID__33DFA290");
+                .HasConstraintName("FK__Usuario__AreaID__396371BC");
         });
 
         OnModelCreatingPartial(modelBuilder);

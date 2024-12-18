@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 
+
 namespace AccesoDatos.Operations
 {
     public class UsuarioDao
@@ -43,8 +44,10 @@ namespace AccesoDatos.Operations
 
             if (usuarioExistente != null)
             {
+                // Lanzamos una excepción para que el controlador pueda manejarla y devolver una respuesta adecuada
                 throw new Exception("Ya existe un usuario con ese nombre de usuario.");
             }
+
 
             // Verificar si el empleado existe en la base de datos Nómina
             var empleado = await _nominaContext.Empleados
@@ -52,7 +55,7 @@ namespace AccesoDatos.Operations
 
             if (empleado == null)
             {
-                throw new Exception("Empleado no encontrado.");
+                throw new Exception("La clave de empleado no coincide con ningún registro en la base de datos de Nómina. Verifica la clave e intenta nuevamente.");
             }
 
             // Verificar que el nombre y los apellidos coincidan con los datos del empleado
@@ -249,6 +252,29 @@ namespace AccesoDatos.Operations
                 }
             };
         }
+
+        public async Task<List<Empleado>> ListarEmpleadosAsync(string? nombre = null, string? claveEmpleado = null)
+        {
+            // Inicia la consulta base
+            var query = _nominaContext.Empleados.AsQueryable();
+
+            // Aplica filtros opcionales si se proporcionan
+            if (!string.IsNullOrEmpty(nombre))
+            {
+                query = query.Where(e => e.Nombre.Contains(nombre));
+            }
+
+            if (!string.IsNullOrEmpty(claveEmpleado))
+            {
+                query = query.Where(e => e.ClaveEmpleado == claveEmpleado);
+            }
+
+            // Ejecuta la consulta y devuelve los resultados como una lista
+            var empleados = await query.ToListAsync();
+
+            return empleados;
+        }
+
 
         public Respuesta ObtenerUsuarios()
         {
@@ -658,21 +684,38 @@ namespace AccesoDatos.Operations
                 await _conadeContext.SaveChangesAsync();
 
                 respuesta.success = true;
-                respuesta.mensaje = accion == "Atender" ? "Solicitud atendida con éxito." : "Solicitud rechazada con éxito.";
 
-                // Enviar correo al solicitante
-                string subject = accion == "Atender" ? "Solicitud Atendida" : "Solicitud Rechazada";
-                string body = $"Hola, su solicitud con ID {idSolicitud} ha sido {accion.ToLower()}.\n\nObservaciones: {observaciones}";
+                // Verificar si la respuesta fue exitosa
+                if (respuesta.success)
+                {
+                    // Primero, asignar el mensaje de éxito o rechazo según la acción
+                    respuesta.mensaje = accion == "Atender" ? "Solicitud atendida con éxito." : "Solicitud rechazada con éxito.";
 
-                try
-                {
-                    await _emailService.EnviarCorreoAsync(emailSolicitante, subject, body);
+                    // Verificar si el correo es nulo o vacío
+                    if (string.IsNullOrEmpty(emailSolicitante))
+                    {
+                        // Ajustar el mensaje si el usuario no tiene correo electrónico
+                        respuesta.mensaje = $"La solicitud ha sido {(accion == "Atender" ? "atendida" : "rechazada")}, pero el usuario no tiene correo electrónico registrado.";
+                    }
+                    else
+                    {
+                        // Enviar correo al solicitante
+                        string subject = accion == "Atender" ? "Solicitud atendida" : "Solicitud rechazada";
+                        string body = $"Hola, su solicitud con ID {idSolicitud} ha sido {(accion == "Atender" ? "atendida" : "rechazada")}.\n\nObservaciones: {observaciones}";
+
+                        try
+                        {
+                            await _emailService.EnviarCorreoAsync(emailSolicitante, subject, body);
+                        }
+                        catch (Exception ex)
+                        {
+                            respuesta.success = false;
+                            respuesta.mensaje += "\nError al enviar correo: " + ex.Message;
+                        }
+                    }
                 }
-                catch (Exception ex)
-                {
-                    respuesta.success = false;
-                    respuesta.mensaje += "\nError al enviar correo: " + ex.Message;
-                }
+
+                
             }
             catch (Exception ex)
             {
