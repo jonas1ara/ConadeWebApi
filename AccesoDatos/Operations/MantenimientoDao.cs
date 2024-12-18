@@ -52,6 +52,12 @@ namespace AccesoDatos.Operations
                 throw new ArgumentException("El tipo de servicio debe ser 'Preventivo' o 'Correctivo'.");
             }
 
+            // Validar que fechaInicio sea antes de fechaEntrega
+            if (fechaEntrega.HasValue && fechaInicio > fechaEntrega.Value)
+            {
+                throw new ArgumentException("La fecha de fin del servicio debe ser después o el mismo día de la fecha de inicio.");
+            }
+
             // Crear un nuevo objeto de Mantenimiento con los datos proporcionados
             var mantenimiento = new Mantenimiento
             {

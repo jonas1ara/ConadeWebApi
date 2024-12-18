@@ -68,6 +68,13 @@ namespace ConadeWebApi.Controllers
                 respuesta.obj = idMantenimiento;
                 return Ok(respuesta);
             }
+            catch (ArgumentException ex)
+            {
+                // Si la excepción es de tipo ArgumentException, devolvemos un mensaje detallado
+                respuesta.success = false;
+                respuesta.mensaje = ex.Message; // Este mensaje será el del error de fecha o cualquier otro
+                return BadRequest(respuesta); // 400 para errores de validación
+            }
             catch (Exception ex)
             {
                 respuesta.success = false;

@@ -46,6 +46,17 @@ namespace AccesoDatos.Operations
                 throw new ArgumentException("El estado debe ser 'Solicitada', 'Atendida' o 'Rechazada'.");
             }
 
+            // Validar que la fecha de envío sea antes que la fecha de recepción máxima
+            if (fechaInicio > fechaFin)
+            {
+                throw new ArgumentException("La fecha de fin debe ser después o el mismo día de la fecha de inicio.");
+            }
+
+            if (horarioInicio >= horarioFin)
+            {
+                throw new ArgumentException("El horario de inicio no puede ser posterior o igual al horario de fin.");
+            }
+
             // Crear un nuevo objeto de UsoInmobiliario con los datos proporcionados
             var usoInmobiliario = new UsoInmobiliario
             {

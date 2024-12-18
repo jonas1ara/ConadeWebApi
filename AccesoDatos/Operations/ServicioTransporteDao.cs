@@ -54,6 +54,12 @@ namespace AccesoDatos.Operations
                 throw new ArgumentException("El estado debe ser 'Solicitada', 'Atendida' o 'Rechazada'.");
             }
 
+            // Validar que la fecha de envío sea antes que la fecha de recepción máxima
+            if (fechaTransporte > fechaTransporteVuelta)
+            {
+                throw new ArgumentException("La fecha de vuelta debe ser después o el mismo día de la fecha de ida.");
+            }
+
             // Crear un nuevo objeto de servicio de transporte con los datos proporcionados
             var servicioTransporte = new ServicioTransporte
             {
