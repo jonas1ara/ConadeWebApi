@@ -1,15 +1,16 @@
 -- DROP
 
 DROP TABLE Mantenimiento;
-DROP TABLE UsoInmobiliario;
+DROP TABLE Eventos;
 DROP TABLE ServicioTransporte;
-DROP TABLE ServicioPostal;
+DROP TABLE ServicioPostal
+DROP TABLE Combustible;
+DROP TABLE UsuarioArea;
 
 DROP TABLE CatArea;
 
 DROP TABLE Usuario;
 DROP TABLE Area;
-
 
 -- Script actualizado
 
@@ -22,23 +23,36 @@ CREATE TABLE Area (
 -- 2. Crear tabla Usuario
 CREATE TABLE Usuario (
     ID INT PRIMARY KEY IDENTITY(1,1),
-    Nombre NVARCHAR(255),
+    Nombre NVARCHAR(255) NOT NULL,
+	ApellidoPaterno NVARCHAR(255) NOT NULL,
+	ApellidoMaterno NVARCHAR(255) NOT NULL,
     NombreUsuario NVARCHAR(255) NOT NULL,
     Contrasena NVARCHAR(255) NOT NULL,
-    Rol NVARCHAR(50) NOT NULL,
-    AreaID INT,
+    Rol NVARCHAR(50) NOT NULL CHECK (Rol IN ('Admin', 'Usuario')),
     FechaCreacion DATETIME DEFAULT GETDATE(),
     FechaUltimoAcceso DATETIME,
-    IdEmpleado INT,
-    FOREIGN KEY (AreaID) REFERENCES Area(ID)
+    IdEmpleado INT NOT NULL,
+);
+
+-- Crear tabla intermedia UsuarioArea
+CREATE TABLE UsuarioArea (
+    UsuarioID INT NOT NULL, -- Relación con la tabla Usuario
+    AreaID INT NOT NULL, -- Relación con la tabla Area
+    FechaAsignacion DATETIME DEFAULT GETDATE(), -- Fecha en que se asigna el área al usuario
+    PRIMARY KEY (UsuarioID, AreaID), -- Clave primaria compuesta por UsuarioID y AreaID
+    FOREIGN KEY (UsuarioID) REFERENCES Usuario(ID) ON DELETE CASCADE, -- Borra las relaciones si el usuario se elimina
+    FOREIGN KEY (AreaID) REFERENCES Area(ID) ON DELETE CASCADE -- Borra las relaciones si el área se elimina
 );
 
 CREATE PROCEDURE sp_AltaUsuarioDesdeEmpleado
     @IdEmpleado INT,
     @Nombre NVARCHAR(255),
+    @ApellidoPaterno NVARCHAR(255),
+    @ApellidoMaterno NVARCHAR(255),
     @NombreUsuario NVARCHAR(255),
     @Contrasena NVARCHAR(255),
     @Rol NVARCHAR(50),
+    @AreaIds NVARCHAR(MAX), -- Lista de IDs de áreas en formato CSV
     @NuevoUsuarioId INT OUTPUT
 AS
 BEGIN
@@ -62,15 +76,30 @@ BEGIN
         END
 
         -- Insertar el nuevo usuario en la tabla Usuario
-        INSERT INTO CONADE1.dbo.Usuario (Nombre, NombreUsuario, Contrasena, Rol, IdEmpleado)
-        VALUES (@Nombre, @NombreUsuario, @Contrasena, @Rol, @IdEmpleado);
+        INSERT INTO CONADE1.dbo.Usuario (Nombre, ApellidoPaterno, ApellidoMaterno, NombreUsuario, Contrasena, Rol, IdEmpleado)
+        VALUES (@Nombre, @ApellidoPaterno, @ApellidoMaterno, @NombreUsuario, @Contrasena, @Rol, @IdEmpleado);
 
         -- Obtener el ID del nuevo usuario insertado
         SET @NuevoUsuarioId = SCOPE_IDENTITY();
 
-        -- Traer los datos del empleado relacionado
+		-- Traer los datos del empleado relacionado
         SELECT * FROM nominaOsimulacion.dbo.Empleados AS e
         WHERE e.IdEmpleado = @IdEmpleado;
+
+        -- Verificar si hay áreas asociadas
+        IF @AreaIds IS NOT NULL AND @AreaIds <> ''
+        BEGIN
+            -- Convertir la lista de IDs de áreas en una tabla temporal
+            DECLARE @AreaTable TABLE (AreaID INT);
+            INSERT INTO @AreaTable (AreaID)
+            SELECT CAST(value AS INT)
+            FROM STRING_SPLIT(@AreaIds, ',');
+
+            -- Insertar las áreas en la tabla UsuarioArea
+            INSERT INTO CONADE1.dbo.UsuarioArea (UsuarioID, AreaID)
+            SELECT @NuevoUsuarioId, AreaID
+            FROM @AreaTable;
+        END
 
         COMMIT TRANSACTION;
     END TRY
@@ -123,53 +152,6 @@ BEGIN
     END
 END;
 
--- 4. Crear tabla UsoInmobiliario
-CREATE TABLE UsoInmobiliario (
-    ID INT PRIMARY KEY IDENTITY(1,1),
-    NumeroDeSerie NVARCHAR(20) UNIQUE NOT NULL,
-    FechaSolicitud DATETIME NOT NULL DEFAULT GETDATE(),
-    AreaSolicitante INT NOT NULL,
-    UsuarioSolicitante INT NOT NULL,
-    TipoSolicitud NVARCHAR(255) NOT NULL CHECK (TipoSolicitud IN ('Uso Inmobiliario')),  -- Cambié aquí
-    Sala NVARCHAR(255) NOT NULL,
-    CatalogoID INT NOT NULL,
-    FechaInicio DATE NOT NULL,
-    FechaFin DATE,
-    HorarioInicio TIME NOT NULL,
-    HorarioFin TIME NOT NULL,
-	AreaID INT,
-    Estado NVARCHAR(50) NOT NULL CHECK (Estado IN ('Solicitada', 'Atendida', 'Rechazada')),
-    Observaciones NVARCHAR(MAX),
-    FOREIGN KEY (AreaSolicitante) REFERENCES CatArea(IdArea),
-    FOREIGN KEY (UsuarioSolicitante) REFERENCES Usuario(ID),
-    FOREIGN KEY (CatalogoID) REFERENCES CatArea(IdArea),
-	FOREIGN KEY (AreaID) REFERENCES Area(ID)
-
-);
-
--- 5. Crear tabla Mantenimiento
-CREATE TABLE Mantenimiento (
-    ID INT PRIMARY KEY IDENTITY(1,1),
-    NumeroDeSerie NVARCHAR(20) UNIQUE NOT NULL,
-    FechaSolicitud DATETIME NOT NULL DEFAULT GETDATE(),
-    AreaSolicitante INT NOT NULL,
-    UsuarioSolicitante INT NOT NULL,
-    TipoSolicitud NVARCHAR(255) NOT NULL CHECK (TipoSolicitud IN ('Mantenimiento')),  -- Cambié aquí
-    TipoServicio NVARCHAR(255) NOT NULL CHECK (TipoServicio IN ('Preventivo', 'Correctivo')),
-    CatalogoID INT NOT NULL,
-	DescripcionServicio NVARCHAR(MAX),
-    FechaInicio DATETIME NOT NULL,
-    FechaEntrega DATETIME,
-	AreaID INT,
-    Estado NVARCHAR(50) NOT NULL CHECK (Estado IN ('Solicitada', 'Atendida', 'Rechazada')),
-	Observaciones NVARCHAR(500),
-    FOREIGN KEY (AreaSolicitante) REFERENCES CatArea(IdArea),
-    FOREIGN KEY (UsuarioSolicitante) REFERENCES Usuario(ID),
-    FOREIGN KEY (CatalogoID) REFERENCES CatArea(IdArea),
-	FOREIGN KEY (AreaID) REFERENCES Area(ID)
-
-);
-
 -- 6. Crear tabla ServicioPostal
 CREATE TABLE ServicioPostal (
     ID INT PRIMARY KEY IDENTITY(1,1),
@@ -181,7 +163,7 @@ CREATE TABLE ServicioPostal (
 	TipoSolicitud NVARCHAR(255) NOT NULL CHECK (TipoSolicitud IN ('Servicio Postal')),  -- Cambié aquí
 	CatalogoID INT NOT NULL,
     FechaEnvio DATE NOT NULL,
-    FechaRecepcionMaxima DATE NOT NULL,
+    FechaRecepcion DATE,
     DescripcionServicio NVARCHAR(500),
 	AreaID INT,
     Estado NVARCHAR(50) NOT NULL CHECK (Estado IN ('Solicitada', 'Atendida', 'Rechazada')),
@@ -217,10 +199,77 @@ CREATE TABLE ServicioTransporte (
 	FOREIGN KEY (AreaID) REFERENCES Area(ID)
 );
 
+-- 4. Crear tabla Eventos
+CREATE TABLE Eventos (
+    ID INT PRIMARY KEY IDENTITY(1,1),
+    NumeroDeSerie NVARCHAR(20) UNIQUE NOT NULL,
+    FechaSolicitud DATETIME NOT NULL DEFAULT GETDATE(),
+    AreaSolicitante INT NOT NULL,
+    UsuarioSolicitante INT NOT NULL,
+    TipoSolicitud NVARCHAR(255) NOT NULL CHECK (TipoSolicitud IN ('Eventos')),  -- Cambié aquí
+	TipoServicio NVARCHAR(255) NOT NULL CHECK (TipoServicio IN ('Audio', 'Grabaciones', 'Uso de auditorio')),
+    Sala NVARCHAR(255) NOT NULL CHECK (Sala IN ('Auditorio de medicina' , 'Auditorio de comunicación social')),
+    CatalogoID INT NOT NULL,
+	DescripcionServicio NVARCHAR(MAX),
+    FechaInicio DATE NOT NULL,
+    FechaFin DATE,
+    HorarioInicio TIME NOT NULL,
+    HorarioFin TIME NOT NULL,
+	AreaID INT,
+    Estado NVARCHAR(50) NOT NULL CHECK (Estado IN ('Solicitada', 'Atendida', 'Rechazada')),
+    Observaciones NVARCHAR(MAX),
+    FOREIGN KEY (AreaSolicitante) REFERENCES CatArea(IdArea),
+    FOREIGN KEY (UsuarioSolicitante) REFERENCES Usuario(ID),
+    FOREIGN KEY (CatalogoID) REFERENCES CatArea(IdArea),
+	FOREIGN KEY (AreaID) REFERENCES Area(ID),
+);
+
+CREATE TABLE Mantenimiento (
+    ID INT PRIMARY KEY IDENTITY(1,1),
+    NumeroDeSerie NVARCHAR(20) UNIQUE NOT NULL,
+    FechaSolicitud DATETIME NOT NULL DEFAULT GETDATE(),
+    AreaSolicitante INT NOT NULL,
+    UsuarioSolicitante INT NOT NULL,
+    TipoSolicitud NVARCHAR(255) NOT NULL CHECK (TipoSolicitud IN ('Mantenimiento')),  -- Cambié aquí
+    TipoServicio NVARCHAR(255) NOT NULL CHECK (TipoServicio IN ('Preventivo', 'Correctivo')),
+    CatalogoID INT NOT NULL,
+	DescripcionServicio NVARCHAR(MAX),
+    FechaInicio DATETIME NOT NULL,
+    FechaEntrega DATETIME,
+	AreaID INT,
+    Estado NVARCHAR(50) NOT NULL CHECK (Estado IN ('Solicitada', 'Atendida', 'Rechazada')),
+	Observaciones NVARCHAR(500),
+    FOREIGN KEY (AreaSolicitante) REFERENCES CatArea(IdArea),
+    FOREIGN KEY (UsuarioSolicitante) REFERENCES Usuario(ID),
+    FOREIGN KEY (CatalogoID) REFERENCES CatArea(IdArea),
+	FOREIGN KEY (AreaID) REFERENCES Area(ID)
+);
+
+CREATE TABLE Combustible (
+	ID INT PRIMARY KEY IDENTITY(1,1),
+    NumeroDeSerie NVARCHAR(20) UNIQUE NOT NULL,
+    FechaSolicitud DATETIME NOT NULL DEFAULT GETDATE(),
+    AreaSolicitante INT NOT NULL,
+    UsuarioSolicitante INT NOT NULL,
+    TipoSolicitud NVARCHAR(255) NOT NULL CHECK (TipoSolicitud IN ('Abastecimiento de Combustible')),  -- Cambié aquí
+	CatalogoID INT NOT NULL,
+	DescripcionServicio NVARCHAR(MAX),
+    Fecha DATETIME NOT NULL,
+	AreaID INT,
+	Estado NVARCHAR(50) NOT NULL CHECK (Estado IN ('Solicitada', 'Atendida', 'Rechazada')),
+	Observaciones NVARCHAR(500),
+    FOREIGN KEY (AreaSolicitante) REFERENCES CatArea(IdArea),
+    FOREIGN KEY (UsuarioSolicitante) REFERENCES Usuario(ID),
+    FOREIGN KEY (CatalogoID) REFERENCES CatArea(IdArea),
+	FOREIGN KEY (AreaID) REFERENCES Area(ID)
+);
+
+
+
 --- Prueba de la base de datos
 -- Insertar áreas
 INSERT INTO Area (Nombre) 
-VALUES ('Servicio Postal'), ('Servicio de Transporte'), ('Uso Auditorios'), ('Mantenimiento');
+VALUES ('Servicio Postal'), ('Servicio Transporte'), ('Eventos'), ('Mantenimiento'), ('Combustible');
 
 -- Insertar áreas en CatArea
 INSERT INTO CatArea (AreaId, Clave, NombreArea, FuenteFinanciamiento, IdEstatus, IdCaptura, IdModificacion, FechaModificacion, Comentarios) VALUES 
@@ -228,69 +277,36 @@ INSERT INTO CatArea (AreaId, Clave, NombreArea, FuenteFinanciamiento, IdEstatus,
 (2, 'L002', 'Pista atletismo Polanco', 5000.00, 2, 1, 3, GETDATE(), 'Pista para eventos y entrenamientos'),  -- Relación con la zona 2
 (3, 'A003', 'Auditoría', 2000.00, 1, 1, 2, GETDATE(), 'Área encargada de la auditoría interna'),  -- Relación con la zona 3
 (4, 'S004', 'Centro Acuático de alto rendimiento', 1500.00, 1, 1, 3, GETDATE(), 'Centro para entrenamientos de natación y deportes acuáticos'),  -- Relación con la zona 4
-(1, 'T005', 'Cancha de Beisbol Ensenada', 3000.00, 1, 1, 2, GETDATE(), 'Cancha de beisbol para entrenamiento y competencias'),  -- Relación con la zona 1
+(5, 'T005', 'Cancha de Beisbol Ensenada', 3000.00, 1, 1, 2, GETDATE(), 'Cancha de beisbol para entrenamiento y competencias'),  -- Relación con la zona 1
 (2, 'L006', 'Pista de Atletismo Guadalajara', 6000.00, 1, 2, 3, GETDATE(), 'Pista de atletismo para entrenamientos y eventos'),  -- Relación con la zona 2
-(3, 'A007', 'Auditoría Interna', 4000.00, 2, 2, 2, GETDATE(), 'Auditoría enfocada en procesos internos de la organización'),  -- Relación con la zona 3
+(5, 'A007', 'Auditoría Interna', 4000.00, 2, 2, 2, GETDATE(), 'Auditoría enfocada en procesos internos de la organización'),  -- Relación con la zona 3
 (4, 'S008', 'Auditorio Central', 5000.00, 1, 2, 3, GETDATE(), 'Auditorio para eventos y presentaciones internas');  -- Relación con la zona 4
 
+-- 1. Insertar usuarios
+INSERT INTO Usuario (Nombre, ApellidoPaterno, ApellidoMaterno, NombreUsuario, Contrasena, Rol, IdEmpleado)
+VALUES 
+('JUAN', 'PEREZ', 'LOPEZ', 'JUANPEREZ', 'Contrasena123', 'Usuario', 1),
+('MARIA', 'GOMEZ', 'MARTINEZ', 'MARIAGOMEZ', 'Contrasena123', 'Usuario', 2),
+('LUIS', 'MARTINEZ', 'HERNANDEZ', 'LUISMARTINEZ', 'Contrasena123', 'Usuario', 3),
+('ANA', 'LOPEZ', 'GARCIA', 'ANALOPES', 'Contrasena123', 'Usuario', 4),
+('CARLOS', 'HERNANDEZ', 'RAMIREZ', 'CARLOSHERNA', 'Contrasena123', 'Usuario', 5),
+('JOSE', 'MARTINEZ', 'GONZALEZ', 'JOSEMARTINEZ', 'Contrasena123', 'Usuario', 6);
 
--- Insertar datos en la tabla UsoInmobiliario
-INSERT INTO UsoInmobiliario (NumeroDeSerie, FechaSolicitud, AreaSolicitante, UsuarioSolicitante, TipoSolicitud, Sala, CatalogoID, FechaInicio, FechaFin, HorarioInicio, HorarioFin, AreaID, Estado, Observaciones)
-VALUES
-('U12345', '2024-12-01', 1, 2, 'Uso Inmobiliario', 'Sala de Juntas 1', 1, '2024-12-02', '2024-12-02', '09:00', '11:00', 3, 'Solicitada', NULL),
-('U12346', '2024-12-02', 2, 2, 'Uso Inmobiliario', 'Sala de Conferencias', 2, '2024-12-03', '2024-12-03', '10:00', '12:00', 3, 'Solicitada', NULL),
-('U12347', '2024-12-03', 3, 5, 'Uso Inmobiliario', 'Sala de Reuniones', 3, '2024-12-04', '2024-12-04', '11:00', '13:00', 3, 'Solicitada', NULL),
-('U12348', '2024-12-04', 4, 2, 'Uso Inmobiliario', 'Auditorio', 4, '2024-12-05', '2024-12-05', '12:00', '14:00', 3, 'Solicitada', NULL),
-('U12349', '2024-12-05', 5, 3, 'Uso Inmobiliario', 'Sala de Conferencias', 5, '2024-12-06', '2024-12-06', '13:00', '15:00', 3, 'Solicitada', NULL),
-('U12350', '2024-12-06', 6, 5, 'Uso Inmobiliario', 'Sala de Juntas 2', 6, '2024-12-07', '2024-12-07', '14:00', '16:00', 3, 'Solicitada', NULL),
-('U12351', '2024-12-07', 7, 2, 'Uso Inmobiliario', 'Sala de Reuniones', 7, '2024-12-08', '2024-12-08', '15:00', '17:00', 3, 'Solicitada', NULL),
-('U12352', '2024-12-08', 8, 3, 'Uso Inmobiliario', 'Auditorio', 1, '2024-12-09', '2024-12-09', '16:00', '18:00', 3, 'Solicitada', NULL),
-('U12353', '2024-12-09', 1, 5, 'Uso Inmobiliario', 'Sala de Juntas 1', 2, '2024-12-10', '2024-12-10', '17:00', '19:00', 3, 'Solicitada', NULL),
-('U12354', '2024-12-10', 2, 2, 'Uso Inmobiliario', 'Sala de Conferencias', 3, '2024-12-11', '2024-12-11', '09:00', '11:00', 3, 'Solicitada', NULL),
-('U12355', '2024-12-11', 3, 3, 'Uso Inmobiliario', 'Sala de Reuniones', 4, '2024-12-12', '2024-12-12', '10:00', '12:00', 3, 'Solicitada', NULL),
-('U12356', '2024-12-12', 4, 5, 'Uso Inmobiliario', 'Auditorio', 5, '2024-12-13', '2024-12-13', '11:00', '13:00', 3, 'Solicitada', NULL),
-('U12357', '2024-12-13', 5, 2, 'Uso Inmobiliario', 'Sala de Juntas 2', 6, '2024-12-14', '2024-12-14', '12:00', '14:00', 3, 'Solicitada', NULL),
-('U12358', '2024-12-14', 6, 3, 'Uso Inmobiliario', 'Sala de Reuniones', 7, '2024-12-15', '2024-12-15', '13:00', '15:00', 3, 'Solicitada', NULL),
-('U12359', '2024-12-15', 7, 5, 'Uso Inmobiliario', 'Auditorio', 1, '2024-12-16', '2024-12-16', '14:00', '16:00', 3, 'Solicitada', NULL),
-('U12360', '2024-12-16', 8, 2, 'Uso Inmobiliario', 'Sala de Juntas 1', 2, '2024-12-17', '2024-12-17', '15:00', '17:00', 3, 'Solicitada', NULL),
-('U12361', '2024-12-17', 1, 3, 'Uso Inmobiliario', 'Sala de Conferencias', 3, '2024-12-18', '2024-12-18', '16:00', '18:00', 3, 'Solicitada', NULL),
-('U12362', '2024-12-18', 2, 5, 'Uso Inmobiliario', 'Sala de Reuniones', 4, '2024-12-19', '2024-12-19', '17:00', '19:00', 3, 'Solicitada', NULL),
-('U12363', '2024-12-19', 3, 2, 'Uso Inmobiliario', 'Auditorio', 5, '2024-12-20', '2024-12-20', '09:00', '11:00', 3, 'Solicitada', NULL),
-('U12364', '2024-12-20', 4, 3, 'Uso Inmobiliario', 'Sala de Juntas 2', 6, '2024-12-21', '2024-12-21', '10:00', '12:00', 3, 'Solicitada', NULL),
-('U12365', '2024-12-21', 5, 5, 'Uso Inmobiliario', 'Sala de Reuniones', 7, '2024-12-22', '2024-12-22', '11:00', '13:00', 3, 'Solicitada', NULL),
-('U12366', '2024-12-22', 6, 2, 'Uso Inmobiliario', 'Auditorio', 1, '2024-12-23', '2024-12-23', '12:00', '14:00', 3, 'Solicitada', NULL),
-('U12367', '2024-12-23', 7, 3, 'Uso Inmobiliario', 'Sala de Juntas 1', 2, '2024-12-24', '2024-12-24', '13:00', '15:00', 3, 'Solicitada', NULL),
-('U12368', '2024-12-24', 8, 5, 'Uso Inmobiliario', 'Sala de Conferencias', 3, '2024-12-25', '2024-12-25', '14:00', '16:00', 3, 'Solicitada', NULL),
-('U12369', '2024-12-25', 1, 2, 'Uso Inmobiliario', 'Sala de Reuniones', 4, '2024-12-26', '2024-12-26', '15:00', '17:00', 3, 'Solicitada', NULL);
+-- 2. Asignar usuarios a las áreas
+INSERT INTO UsuarioArea (UsuarioID, AreaID)
+VALUES 
+(1, 1), -- JUAN asignado a Servicio Postal
+(2, 2), -- MARIA asignada a Servicio Transporte
+(3, 3), -- LUIS asignado a Eventos
+(4, 4), -- ANA asignada a Mantenimiento
+(5, 5), -- CARLOS asignado a Combustible
+(6, 1); -- JOSE asignado a Servicio Postal
 
 
--- Insertar datos en la tabla Mantenimiento
-INSERT INTO Mantenimiento (NumeroDeSerie, FechaSolicitud, AreaSolicitante, UsuarioSolicitante, TipoSolicitud, TipoServicio, CatalogoID, DescripcionServicio, FechaInicio, FechaEntrega, AreaID, Estado, Observaciones)
-VALUES
-('M12345', '2024-12-01', 1, 2, 'Mantenimiento', 'Preventivo', 1, 'Mantenimiento preventivo de equipos', '2024-12-05', '2024-12-06', 4, 'Solicitada', NULL),
-('M12346', '2024-12-02', 2, 2, 'Mantenimiento', 'Correctivo', 2, 'Reparación de servidores', '2024-12-07', '2024-12-08', 4, 'Solicitada', NULL),
-('M12347', '2024-12-03', 3, 5, 'Mantenimiento', 'Preventivo', 3, 'Monitoreo de sistemas críticos', '2024-12-09', '2024-12-10', 3, 'Solicitada', NULL),
-('M12348', '2024-12-04', 4, 2, 'Mantenimiento', 'Correctivo', 4, 'Ajuste de red', '2024-12-11', '2024-12-12', 3, 'Solicitada', NULL),
-('M12349', '2024-12-05', 5, 3, 'Mantenimiento', 'Preventivo', 5, 'Limpieza de sistemas', '2024-12-13', '2024-12-14', 3, 'Solicitada', NULL),
-('M12350', '2024-12-06', 6, 5, 'Mantenimiento', 'Preventivo', 6, 'Verificación de seguridad', '2024-12-15', '2024-12-16', 3, 'Solicitada', NULL),
-('M12351', '2024-12-07', 7, 2, 'Mantenimiento', 'Correctivo', 7, 'Reparación de impresoras', '2024-12-17', '2024-12-18', 3, 'Solicitada', NULL),
-('M12352', '2024-12-08', 8, 3, 'Mantenimiento', 'Preventivo', 1, 'Chequeo de sistemas de respaldo', '2024-12-19', '2024-12-20', 3, 'Solicitada', NULL),
-('M12353', '2024-12-09', 1, 5, 'Mantenimiento', 'Preventivo', 2, 'Inspección de redes', '2024-12-21', '2024-12-22', 3, 'Solicitada', NULL),
-('M12354', '2024-12-10', 2, 2, 'Mantenimiento', 'Correctivo', 3, 'Reparación de hardware', '2024-12-23', '2024-12-24', 3, 'Solicitada', NULL),
-('M12355', '2024-12-11', 3, 3, 'Mantenimiento', 'Preventivo', 4, 'Actualización de software', '2024-12-25', '2024-12-26', 3, 'Solicitada', NULL),
-('M12356', '2024-12-12', 4, 5, 'Mantenimiento', 'Preventivo', 5, 'Monitoreo de bases de datos', '2024-12-27', '2024-12-28', 3, 'Solicitada', NULL),
-('M12357', '2024-12-13', 5, 2, 'Mantenimiento', 'Correctivo', 6, 'Solución de problemas de red', '2024-12-29', '2024-12-30', 3, 'Solicitada', NULL),
-('M12358', '2024-12-14', 6, 3, 'Mantenimiento', 'Preventivo', 7, 'Verificación de sistemas de seguridad', '2024-12-31', '2025-01-01', 3, 'Solicitada', NULL),
-('M12359', '2024-12-15', 7, 5, 'Mantenimiento', 'Correctivo', 1, 'Reparación de sistemas HVAC', '2025-01-02', '2025-01-03', 3, 'Solicitada', NULL),
-('M12360', '2024-12-16', 8, 2, 'Mantenimiento', 'Preventivo', 2, 'Inspección de energía', '2025-01-04', '2025-01-05', 3, 'Solicitada', NULL),
-('M12361', '2024-12-17', 1, 3, 'Mantenimiento', 'Preventivo', 3, 'Revisión de UPS', '2025-01-06', '2025-01-07', 3, 'Solicitada', NULL),
-('M12362', '2024-12-18', 2, 5, 'Mantenimiento', 'Correctivo', 4, 'Solución de problemas de software', '2025-01-08', '2025-01-09', 3, 'Solicitada', NULL),
-('M12363', '2024-12-19', 3, 2, 'Mantenimiento', 'Preventivo', 5, 'Análisis de rendimiento de servidores', '2025-01-10', '2025-01-11', 3, 'Solicitada', NULL),
-('M12364', '2024-12-20', 4, 3, 'Mantenimiento', 'Preventivo', 6, 'Limpieza de sistemas informáticos', '2025-01-12', '2025-01-13', 3, 'Solicitada', NULL);
-
+SELECT * FROM Usuario
 
 -- Insertar datos en la tabla ServicioPostal
-INSERT INTO ServicioPostal (NumeroDeSerie, FechaSolicitud, AreaSolicitante, UsuarioSolicitante, TipoDeServicio, TipoSolicitud, CatalogoID, FechaEnvio, FechaRecepcionMaxima, DescripcionServicio, AreaID, Estado, Observaciones)
+INSERT INTO ServicioPostal (NumeroDeSerie, FechaSolicitud, AreaSolicitante, UsuarioSolicitante, TipoDeServicio, TipoSolicitud, CatalogoID, FechaEnvio, FechaRecepcion, DescripcionServicio, AreaID, Estado, Observaciones)
 VALUES
 ('S12345', '2024-12-01', 1, 1, 'Llevar', 'Servicio Postal', 1, '2024-12-02', '2024-12-03', 'Envío de documentos importantes', 1, 'Solicitada', NULL),
 ('S12346', '2024-12-02', 2, 2, 'Recoger', 'Servicio Postal', 2, '2024-12-04', '2024-12-05', 'Recogida de paquetes', 1, 'Solicitada', NULL),
@@ -350,6 +366,92 @@ VALUES
 ('T12370', '2024-12-26', 2, 3, 'Recoger', 'Servicio Transporte', 5, '2024-12-29', 'Sucursal OO', 'Sucursal PP', 3, 'Solicitada', NULL);
 
 
+-- Insertar datos en la tabla UsoInmobiliario
+INSERT INTO Eventos (NumeroDeSerie, FechaSolicitud, AreaSolicitante, UsuarioSolicitante, TipoSolicitud, TipoServicio, Sala, CatalogoID, FechaInicio, FechaFin, HorarioInicio, HorarioFin, AreaID, Estado, Observaciones)
+VALUES
+('U12345', '2024-12-01', 1, 2, 'Eventos','Uso de auditorio','Auditorio de medicina', 1, '2024-12-02', '2024-12-02', '09:00', '11:00', 3, 'Solicitada', NULL),
+('U12346', '2024-12-02', 2, 2, 'Eventos', 'Uso de auditorio', 'Auditorio de comunicación social', 2, '2024-12-03', '2024-12-03', '10:00', '12:00', 3, 'Solicitada', NULL),
+('U12347', '2024-12-03', 3, 5, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 3, '2024-12-04', '2024-12-04', '11:00', '13:00', 3, 'Solicitada', NULL),
+('U12348', '2024-12-04', 4, 2, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 4, '2024-12-05', '2024-12-05', '12:00', '14:00', 3, 'Solicitada', NULL),
+('U12349', '2024-12-05', 5, 3, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 5, '2024-12-06', '2024-12-06', '13:00', '15:00', 3, 'Solicitada', NULL),
+('U12350', '2024-12-06', 6, 5, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 6, '2024-12-07', '2024-12-07', '14:00', '16:00', 3, 'Solicitada', NULL),
+('U12351', '2024-12-07', 7, 2, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 7, '2024-12-08', '2024-12-08', '15:00', '17:00', 3, 'Solicitada', NULL),
+('U12352', '2024-12-08', 8, 3, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 1, '2024-12-09', '2024-12-09', '16:00', '18:00', 3, 'Solicitada', NULL),
+('U12353', '2024-12-09', 1, 5, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 2, '2024-12-10', '2024-12-10', '17:00', '19:00', 3, 'Solicitada', NULL),
+('U12354', '2024-12-10', 2, 2, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 3, '2024-12-11', '2024-12-11', '09:00', '11:00', 3, 'Solicitada', NULL),
+('U12355', '2024-12-11', 3, 3, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 4, '2024-12-12', '2024-12-12', '10:00', '12:00', 3, 'Solicitada', NULL),
+('U12356', '2024-12-12', 4, 5, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 5, '2024-12-13', '2024-12-13', '11:00', '13:00', 3, 'Solicitada', NULL),
+('U12357', '2024-12-13', 5, 2, 'Eventos', 'Uso de auditorio', 'Auditorio de comunicación social', 6, '2024-12-14', '2024-12-14', '12:00', '14:00', 3, 'Solicitada', NULL),
+('U12358', '2024-12-14', 6, 3, 'Eventos', 'Uso de auditorio', 'Auditorio de comunicación social', 7, '2024-12-15', '2024-12-15', '13:00', '15:00', 3, 'Solicitada', NULL),
+('U12359', '2024-12-15', 7, 5, 'Eventos', 'Uso de auditorio', 'Auditorio de comunicación social', 1, '2024-12-16', '2024-12-16', '14:00', '16:00', 3, 'Solicitada', NULL),
+('U12360', '2024-12-16', 8, 2, 'Eventos', 'Uso de auditorio', 'Auditorio de comunicación social', 2, '2024-12-17', '2024-12-17', '15:00', '17:00', 3, 'Solicitada', NULL),
+('U12361', '2024-12-17', 1, 3, 'Eventos', 'Uso de auditorio', 'Auditorio de comunicación social', 3, '2024-12-18', '2024-12-18', '16:00', '18:00', 3, 'Solicitada', NULL),
+('U12362', '2024-12-18', 2, 5, 'Eventos', 'Uso de auditorio', 'Auditorio de comunicación social', 4, '2024-12-19', '2024-12-19', '17:00', '19:00', 3, 'Solicitada', NULL),
+('U12363', '2024-12-19', 3, 2, 'Eventos', 'Uso de auditorio', 'Auditorio de comunicación social', 5, '2024-12-20', '2024-12-20', '09:00', '11:00', 3, 'Solicitada', NULL),
+('U12364', '2024-12-20', 4, 3, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 6, '2024-12-21', '2024-12-21', '10:00', '12:00', 3, 'Solicitada', NULL),
+('U12365', '2024-12-21', 5, 5, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 7, '2024-12-22', '2024-12-22', '11:00', '13:00', 3, 'Solicitada', NULL),
+('U12366', '2024-12-22', 6, 2, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 1, '2024-12-23', '2024-12-23', '12:00', '14:00', 3, 'Solicitada', NULL),
+('U12367', '2024-12-23', 7, 3, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 2, '2024-12-24', '2024-12-24', '13:00', '15:00', 3, 'Solicitada', NULL),
+('U12368', '2024-12-24', 8, 5, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 3, '2024-12-25', '2024-12-25', '14:00', '16:00', 3, 'Solicitada', NULL),
+('U12369', '2024-12-25', 1, 2, 'Eventos', 'Uso de auditorio', 'Auditorio de medicina', 4, '2024-12-26', '2024-12-26', '15:00', '17:00', 3, 'Solicitada', NULL);
+
+
+-- Insertar datos en la tabla Mantenimiento
+INSERT INTO Mantenimiento (NumeroDeSerie, FechaSolicitud, AreaSolicitante, UsuarioSolicitante, TipoSolicitud, TipoServicio, CatalogoID, DescripcionServicio, FechaInicio, FechaEntrega, AreaID, Estado, Observaciones)
+VALUES
+('M12345', '2024-12-01', 1, 2, 'Mantenimiento', 'Preventivo', 1, 'Mantenimiento preventivo de equipos', '2024-12-05', '2024-12-06', 4, 'Solicitada', NULL),
+('M12346', '2024-12-02', 2, 2, 'Mantenimiento', 'Correctivo', 2, 'Reparación de servidores', '2024-12-07', '2024-12-08', 4, 'Solicitada', NULL),
+('M12347', '2024-12-03', 3, 5, 'Mantenimiento', 'Preventivo', 3, 'Monitoreo de sistemas críticos', '2024-12-09', '2024-12-10', 3, 'Solicitada', NULL),
+('M12348', '2024-12-04', 4, 2, 'Mantenimiento', 'Correctivo', 4, 'Ajuste de red', '2024-12-11', '2024-12-12', 3, 'Solicitada', NULL),
+('M12349', '2024-12-05', 5, 3, 'Mantenimiento', 'Preventivo', 5, 'Limpieza de sistemas', '2024-12-13', '2024-12-14', 3, 'Solicitada', NULL),
+('M12350', '2024-12-06', 6, 5, 'Mantenimiento', 'Preventivo', 6, 'Verificación de seguridad', '2024-12-15', '2024-12-16', 3, 'Solicitada', NULL),
+('M12351', '2024-12-07', 7, 2, 'Mantenimiento', 'Correctivo', 7, 'Reparación de impresoras', '2024-12-17', '2024-12-18', 3, 'Solicitada', NULL),
+('M12352', '2024-12-08', 8, 3, 'Mantenimiento', 'Preventivo', 1, 'Chequeo de sistemas de respaldo', '2024-12-19', '2024-12-20', 3, 'Solicitada', NULL),
+('M12353', '2024-12-09', 1, 5, 'Mantenimiento', 'Preventivo', 2, 'Inspección de redes', '2024-12-21', '2024-12-22', 3, 'Solicitada', NULL),
+('M12354', '2024-12-10', 2, 2, 'Mantenimiento', 'Correctivo', 3, 'Reparación de hardware', '2024-12-23', '2024-12-24', 3, 'Solicitada', NULL),
+('M12355', '2024-12-11', 3, 3, 'Mantenimiento', 'Preventivo', 4, 'Actualización de software', '2024-12-25', '2024-12-26', 3, 'Solicitada', NULL),
+('M12356', '2024-12-12', 4, 5, 'Mantenimiento', 'Preventivo', 5, 'Monitoreo de bases de datos', '2024-12-27', '2024-12-28', 3, 'Solicitada', NULL),
+('M12357', '2024-12-13', 5, 2, 'Mantenimiento', 'Correctivo', 6, 'Solución de problemas de red', '2024-12-29', '2024-12-30', 3, 'Solicitada', NULL),
+('M12358', '2024-12-14', 6, 3, 'Mantenimiento', 'Preventivo', 7, 'Verificación de sistemas de seguridad', '2024-12-31', '2025-01-01', 3, 'Solicitada', NULL),
+('M12359', '2024-12-15', 7, 5, 'Mantenimiento', 'Correctivo', 1, 'Reparación de sistemas HVAC', '2025-01-02', '2025-01-03', 3, 'Solicitada', NULL),
+('M12360', '2024-12-16', 8, 2, 'Mantenimiento', 'Preventivo', 2, 'Inspección de energía', '2025-01-04', '2025-01-05', 3, 'Solicitada', NULL),
+('M12361', '2024-12-17', 1, 3, 'Mantenimiento', 'Preventivo', 3, 'Revisión de UPS', '2025-01-06', '2025-01-07', 3, 'Solicitada', NULL),
+('M12362', '2024-12-18', 2, 5, 'Mantenimiento', 'Correctivo', 4, 'Solución de problemas de software', '2025-01-08', '2025-01-09', 3, 'Solicitada', NULL),
+('M12363', '2024-12-19', 3, 2, 'Mantenimiento', 'Preventivo', 5, 'Análisis de rendimiento de servidores', '2025-01-10', '2025-01-11', 3, 'Solicitada', NULL),
+('M12364', '2024-12-20', 4, 3, 'Mantenimiento', 'Preventivo', 6, 'Limpieza de sistemas informáticos', '2025-01-12', '2025-01-13', 3, 'Solicitada', NULL);
+
+
+INSERT INTO Combustible (NumeroDeSerie, FechaSolicitud, AreaSolicitante, UsuarioSolicitante, TipoSolicitud, CatalogoID, DescripcionServicio, Fecha, AreaID, Estado, Observaciones)
+VALUES
+('C12345', '2024-12-01', 1, 2, 'Abastecimiento de Combustible', 1, 'Carga de combustible para vehículo oficial', '2024-12-05', 4, 'Solicitada', NULL),
+('C12346', '2024-12-02', 2, 3, 'Abastecimiento de Combustible', 2, 'Suministro de gasolina para unidad móvil', '2024-12-06', 4, 'Solicitada', NULL),
+('C12347', '2024-12-03', 3, 4, 'Abastecimiento de Combustible', 3, 'Carga de diésel para camión de carga', '2024-12-07', 3, 'Solicitada', NULL),
+('C12348', '2024-12-04', 4, 5, 'Abastecimiento de Combustible', 4, 'Suministro de combustible para generador', '2024-12-08', 3, 'Solicitada', NULL),
+('C12349', '2024-12-05', 5, 6, 'Abastecimiento de Combustible', 5, 'Reabastecimiento de gasolina premium', '2024-12-09', 3, 'Solicitada', NULL),
+('C12350', '2024-12-06', 6, 5, 'Abastecimiento de Combustible', 6, 'Carga de combustible para flota de transporte', '2024-12-10', 3, 'Solicitada', NULL),
+('C12351', '2024-12-07', 7, 5, 'Abastecimiento de Combustible', 7, 'Suministro de gasolina para maquinaria pesada', '2024-12-11', 3, 'Solicitada', NULL),
+('C12352', '2024-12-08', 8, 6, 'Abastecimiento de Combustible', 1, 'Carga de gasolina para patrulla', '2024-12-12', 3, 'Solicitada', NULL),
+('C12353', '2024-12-09', 1, 2, 'Abastecimiento de Combustible', 2, 'Reabastecimiento de diésel para autobús', '2024-12-13', 3, 'Solicitada', NULL),
+('C12354', '2024-12-10', 2, 3, 'Abastecimiento de Combustible', 3, 'Carga de gasolina regular para unidad de servicio', '2024-12-14', 3, 'Solicitada', NULL),
+('C12355', '2024-12-11', 3, 4, 'Abastecimiento de Combustible', 4, 'Reabastecimiento de combustible para generador de emergencia', '2024-12-15', 3, 'Solicitada', NULL),
+('C12356', '2024-12-12', 4, 5, 'Abastecimiento de Combustible', 5, 'Carga de combustible para embarcación', '2024-12-16', 3, 'Solicitada', NULL),
+('C12357', '2024-12-13', 5, 6, 'Abastecimiento de Combustible', 6, 'Reabastecimiento de combustible para avión', '2024-12-17', 3, 'Solicitada', NULL),
+('C12358', '2024-12-14', 6, 5, 'Abastecimiento de Combustible', 7, 'Suministro de gasolina premium para vehículo ejecutivo', '2024-12-18', 3, 'Solicitada', NULL),
+('C12359', '2024-12-15', 7, 5, 'Abastecimiento de Combustible', 1, 'Carga de combustible para motocicleta oficial', '2024-12-19', 3, 'Solicitada', NULL),
+('C12360', '2024-12-16', 8, 6, 'Abastecimiento de Combustible', 2, 'Reabastecimiento de combustible para planta eléctrica', '2024-12-20', 3, 'Solicitada', NULL),
+('C12361', '2024-12-17', 1, 2, 'Abastecimiento de Combustible', 3, 'Suministro de gasolina regular para vehículo particular', '2024-12-21', 3, 'Solicitada', NULL),
+('C12362', '2024-12-18', 2, 3, 'Abastecimiento de Combustible', 4, 'Carga de diésel para maquinaria agrícola', '2024-12-22', 3, 'Solicitada', NULL),
+('C12363', '2024-12-19', 3, 4, 'Abastecimiento de Combustible', 5, 'Reabastecimiento de combustible para transporte público', '2024-12-23', 3, 'Solicitada', NULL),
+('C12364', '2024-12-20', 4, 5, 'Abastecimiento de Combustible', 6, 'Suministro de combustible para dron de vigilancia', '2024-12-24', 3, 'Solicitada', NULL),
+('C12365', '2024-12-21', 5, 6, 'Abastecimiento de Combustible', 7, 'Carga de gasolina premium para unidad de emergencias', '2024-12-25', 3, 'Solicitada', NULL),
+('C12366', '2024-12-22', 6, 5, 'Abastecimiento de Combustible', 1, 'Suministro de combustible para helicóptero', '2024-12-26', 3, 'Solicitada', NULL),
+('C12367', '2024-12-23', 7, 5, 'Abastecimiento de Combustible', 2, 'Carga de diésel para grúa', '2024-12-27', 3, 'Solicitada', NULL),
+('C12368', '2024-12-24', 8, 6, 'Abastecimiento de Combustible', 3, 'Reabastecimiento de combustible para flotilla comercial', '2024-12-28', 3, 'Solicitada', NULL),
+('C12369', '2024-12-25', 1, 2, 'Abastecimiento de Combustible', 4, 'Carga de gasolina para automóvil de transporte', '2024-12-29', 3, 'Solicitada', NULL),
+('C12370', '2024-12-26', 2, 3, 'Abastecimiento de Combustible', 5, 'Suministro de combustible para embarcación de carga', '2024-12-30', 3, 'Solicitada', NULL);
+
+
+
 -- Filtros de prueba
 
 
@@ -380,7 +482,7 @@ FROM Mantenimiento
 WHERE UsuarioSolicitante = 1;
 
 
--- Obtener todas las solicitudes de Uso Inmobiliario con estado 'Solicitada'
+-- Obtener todas las solicitudes de Eventos con estado 'Solicitada'
 SELECT * 
 FROM UsoInmobiliario
 WHERE Estado = 'Solicitada';
@@ -407,7 +509,7 @@ SELECT *
 FROM CatArea
 WHERE FuenteFinanciamiento > 10000;
 
--- Obtener todas las solicitudes de Uso Inmobiliario realizadas en '2024-12-01'
+-- Obtener todas las solicitudes de Eventos realizadas en '2024-12-01'
 SELECT * 
 FROM UsoInmobiliario
 WHERE FechaSolicitud = '2024-12-01';
@@ -423,6 +525,7 @@ FROM ServicioPostal
 WHERE FechaEnvio > '2024-12-02';
 
 SELECT * FROM Mantenimiento WHERE rol = Admin;
+
 
 
 
