@@ -298,9 +298,9 @@ namespace ConadeWebApi.Controllers
         }
 
         [HttpDelete("EliminarSolicitudAdmin")]
-        public async Task<IActionResult> EliminarSolicitudAdmin(int idSolicitud, int usuarioId)
+        public async Task<IActionResult> EliminarSolicitudAdmin(int idSolicitud, int usuarioId, string tipoSolicitud)
         {
-            var respuesta = await _dao.EliminarSolicitudPorIdAdminAsync(idSolicitud, usuarioId);
+            var respuesta = await _dao.EliminarSolicitudPorIdAdminAsync(idSolicitud, usuarioId, tipoSolicitud);
 
             if (respuesta.success)
             {
@@ -312,19 +312,20 @@ namespace ConadeWebApi.Controllers
             }
         }
 
+
         [HttpPost("AprobarRechazarSolicitud")]
-        public async Task<IActionResult> AprobarRechazarSolicitud(int idSolicitud, int usuarioId, string accion, string observaciones)
+        public async Task<IActionResult> AprobarRechazarSolicitud(int idSolicitud, int usuarioId, string accion, string observaciones, string tipoSolicitud)
         {
             // Validar los parámetros de entrada
-            if (idSolicitud <= 0 || usuarioId <= 0 || string.IsNullOrWhiteSpace(accion) || string.IsNullOrWhiteSpace(observaciones))
+            if (idSolicitud <= 0 || usuarioId <= 0 || string.IsNullOrWhiteSpace(accion) || string.IsNullOrWhiteSpace(observaciones) || string.IsNullOrWhiteSpace(tipoSolicitud))
             {
                 return BadRequest(new { success = false, mensaje = "Los parámetros proporcionados no son válidos." });
             }
 
             try
             {
-                // Llamar al método de lógica de negocio
-                var respuesta = await _dao.AprobarRechazarSolicitudAsync(idSolicitud, usuarioId, accion, observaciones);
+                // Llamar al método de lógica de negocio, pasando el tipo de solicitud
+                var respuesta = await _dao.AprobarRechazarSolicitudAsync(idSolicitud, usuarioId, accion, observaciones, tipoSolicitud);
 
                 // Evaluar la respuesta
                 if (respuesta.success)
@@ -342,6 +343,7 @@ namespace ConadeWebApi.Controllers
                 return StatusCode(500, new { success = false, mensaje = "Ocurrió un error interno: " + ex.Message });
             }
         }
+
 
 
 

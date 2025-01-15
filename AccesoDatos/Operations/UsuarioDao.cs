@@ -106,10 +106,6 @@ namespace AccesoDatos.Operations
         }
 
 
-
-
-
-
         public async Task<Usuario?> LoginAsync(string nombreUsuario, string password)
         {
 
@@ -367,15 +363,22 @@ namespace AccesoDatos.Operations
                     .Where(s => s.UsuarioSolicitante == usuarioId)
                     .ToListAsync();
 
-                //var solicitudesUsoInmobiliario = await _conadeContext.UsoInmobiliarios
-                //    .Where(s => s.UsuarioSolicitante == usuarioId)
-                //    .ToListAsync();
+                var solicitudesEventos = await _conadeContext.Eventos
+                    .Where(s => s.UsuarioSolicitante == usuarioId)
+                    .ToListAsync();
+
+                // Consultar solicitudes de Combustible
+                var solicitudesCombustible = await _conadeContext.Combustibles
+                    .Where(s => s.UsuarioSolicitante == usuarioId)
+                    .ToListAsync();
 
                 // Combinar todas las solicitudes en una lista
                 var todasLasSolicitudes = solicitudesServicioPostal
                     .Cast<object>()
+                    .Concat(solicitudesServicioTransporte.Cast<object>())
                     .Concat(solicitudesMantenimiento.Cast<object>())
-                    //.Concat(solicitudesUsoInmobiliario.Cast<object>())
+                    .Concat(solicitudesEventos.Cast<object>())
+                    .Concat(solicitudesCombustible.Cast<object>()) // Agregar solicitudes de combustible
                     .ToList();
 
                 if (!todasLasSolicitudes.Any())
@@ -398,6 +401,7 @@ namespace AccesoDatos.Operations
             return respuesta;
         }
 
+
         public async Task<Respuesta> EliminarSolicitudPorIdAsync(int idSolicitud, int usuarioId)
         {
             var respuesta = new Respuesta();
@@ -405,7 +409,7 @@ namespace AccesoDatos.Operations
             try
             {
                 // Buscar en las tablas relacionadas según el tipo de solicitud
-                // Aquí, debes determinar en qué tabla buscar (ServicioPostal, ServicioTransporte, UsoInmobiliario, Mantenimiento)
+                // Aquí, debes determinar en qué tabla buscar (ServicioPostal, ServicioTransporte, Eventos, Mantenimiento, Combustible)
                 // En este ejemplo, supongo que "TipoSolicitud" es un campo que nos indica la tabla en la que buscar.
 
                 // Buscar en la tabla ServicioPostal
@@ -434,18 +438,18 @@ namespace AccesoDatos.Operations
                     return respuesta;
                 }
 
-                //// Buscar en la tabla UsoInmobiliario
-                //var solicitudUsoInmobiliario = await _conadeContext.UsoInmobiliarios
-                //    .FirstOrDefaultAsync(s => s.Id == idSolicitud && s.UsuarioSolicitante == usuarioId);
+                // Buscar en la tabla Eventos
+                var solicitudUsoInmobiliario = await _conadeContext.Eventos
+                    .FirstOrDefaultAsync(s => s.Id == idSolicitud && s.UsuarioSolicitante == usuarioId);
 
-                //if (solicitudUsoInmobiliario != null)
-                //{
-                //    _conadeContext.UsoInmobiliarios.Remove(solicitudUsoInmobiliario);
-                //    await _conadeContext.SaveChangesAsync();
-                //    respuesta.success = true;
-                //    respuesta.mensaje = "Solicitud eliminada con éxito de UsoInmobiliario.";
-                //    return respuesta;
-                //}
+                if (solicitudUsoInmobiliario != null)
+                {
+                    _conadeContext.Eventos.Remove(solicitudUsoInmobiliario);
+                    await _conadeContext.SaveChangesAsync();
+                    respuesta.success = true;
+                    respuesta.mensaje = "Solicitud eliminada con éxito de Eventos.";
+                    return respuesta;
+                }
 
                 // Buscar en la tabla Mantenimiento
                 var solicitudMantenimiento = await _conadeContext.Mantenimientos
@@ -457,6 +461,19 @@ namespace AccesoDatos.Operations
                     await _conadeContext.SaveChangesAsync();
                     respuesta.success = true;
                     respuesta.mensaje = "Solicitud eliminada con éxito de Mantenimiento.";
+                    return respuesta;
+                }
+
+                // Buscar en la tabla Combustible
+                var solicitudCombustible = await _conadeContext.Combustibles
+                    .FirstOrDefaultAsync(s => s.Id == idSolicitud && s.UsuarioSolicitante == usuarioId);
+
+                if (solicitudCombustible != null)
+                {
+                    _conadeContext.Combustibles.Remove(solicitudCombustible);
+                    await _conadeContext.SaveChangesAsync();
+                    respuesta.success = true;
+                    respuesta.mensaje = "Solicitud eliminada con éxito de Combustible.";
                     return respuesta;
                 }
 
@@ -473,60 +490,116 @@ namespace AccesoDatos.Operations
             return respuesta;
         }
 
-        public async Task<Respuesta> EliminarSolicitudPorIdAdminAsync(int idSolicitud, int usuarioId)
+        public async Task<Respuesta> EliminarSolicitudPorIdAdminAsync(int idSolicitud, int usuarioId, string tipoSolicitud)
         {
             var respuesta = new Respuesta();
 
             try
             {
-                // Obtener el área del usuario administrador
+                // Verificar que el usuario es un admin
                 var usuario = await _conadeContext.Usuarios
                     .FirstOrDefaultAsync(u => u.Id == usuarioId);
 
-                //if (usuario == null || usuario.AreaId == null)
-                //{
-                //    respuesta.success = false;
-                //    respuesta.mensaje = "No se pudo encontrar el usuario o el usuario no tiene un área asignada.";
-                //    return respuesta;
-                //}
-
-                //int areaId = usuario.AreaId.Value;
-
-                // Diccionario de tablas de solicitudes
-                var tablasSolicitudes = new List<(object solicitud, string mensaje, IQueryable<object> tabla)>
+                if (usuario == null)
                 {
-                    (new ServicioPostal(), "ServicioPostal", _conadeContext.ServicioPostals.AsQueryable()),
-                    (new ServicioTransporte(), "ServicioTransporte", _conadeContext.ServicioTransportes.AsQueryable()),
-                    //(new UsoInmobiliario(), "UsoInmobiliario", _conadeContext.UsoInmobiliarios.AsQueryable()),
-                    (new Mantenimiento(), "Mantenimiento", _conadeContext.Mantenimientos.AsQueryable())
-                };
+                    respuesta.success = false;
+                    respuesta.mensaje = "No se pudo encontrar el usuario.";
+                    return respuesta;
+                }
 
-                foreach (var (solicitud, mensaje, tabla) in tablasSolicitudes)
+                // Validar si el usuario es Admin
+                if (usuario.Rol != "Admin")
                 {
-                    // Buscar la solicitud por id y el AreaId del administrador
-                    var solicitudEncontrada = await tabla
-                        .FirstOrDefaultAsync(s =>
-                            EF.Property<int>(s, "Id") == idSolicitud);
-                    // Registra el resultado de la consulta
-                    if (solicitudEncontrada != null)
+                    if (!usuario.UsuarioAreas.Any())
                     {
-                        Console.WriteLine($"Solicitud encontrada en {mensaje}: {solicitudEncontrada}");
-                    }
-
-                    // Si la solicitud fue encontrada y pertenece al área del administrador, eliminamos la solicitud
-                    if (solicitudEncontrada != null)
-                    {
-                        _conadeContext.Remove(solicitudEncontrada);
-                        await _conadeContext.SaveChangesAsync();
-                        respuesta.success = true;
-                        respuesta.mensaje = $"Solicitud eliminada con éxito de {mensaje}.";
+                        respuesta.success = false;
+                        respuesta.mensaje = "El usuario no es Administrador.";
                         return respuesta;
                     }
                 }
 
-                // Si no se encontró la solicitud en ninguna tabla o no pertenece al área del administrador
+                // Buscar la solicitud según el tipo de solicitud
+                switch (tipoSolicitud.ToLower())
+                {
+                    case "servicio postal":
+                        var solicitudServicioPostal = await _conadeContext.ServicioPostals
+                            .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+
+                        if (solicitudServicioPostal != null)
+                        {
+                            _conadeContext.ServicioPostals.Remove(solicitudServicioPostal);
+                            await _conadeContext.SaveChangesAsync();
+                            respuesta.success = true;
+                            respuesta.mensaje = "Solicitud eliminada con éxito de ServicioPostal.";
+                            return respuesta;
+                        }
+                        break;
+
+                    case "servicio transporte":
+                        var solicitudServicioTransporte = await _conadeContext.ServicioTransportes
+                            .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+
+                        if (solicitudServicioTransporte != null)
+                        {
+                            _conadeContext.ServicioTransportes.Remove(solicitudServicioTransporte);
+                            await _conadeContext.SaveChangesAsync();
+                            respuesta.success = true;
+                            respuesta.mensaje = "Solicitud eliminada con éxito de ServicioTransporte.";
+                            return respuesta;
+                        }
+                        break;
+
+                    case "eventos":
+                        var solicitudEvento = await _conadeContext.Eventos
+                            .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+
+                        if (solicitudEvento != null)
+                        {
+                            _conadeContext.Eventos.Remove(solicitudEvento);
+                            await _conadeContext.SaveChangesAsync();
+                            respuesta.success = true;
+                            respuesta.mensaje = "Solicitud eliminada con éxito de Evento.";
+                            return respuesta;
+                        }
+                        break;
+
+                    case "mantenimiento":
+                        var solicitudMantenimiento = await _conadeContext.Mantenimientos
+                            .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+
+                        if (solicitudMantenimiento != null)
+                        {
+                            _conadeContext.Mantenimientos.Remove(solicitudMantenimiento);
+                            await _conadeContext.SaveChangesAsync();
+                            respuesta.success = true;
+                            respuesta.mensaje = "Solicitud eliminada con éxito de Mantenimiento.";
+                            return respuesta;
+                        }
+                        break;
+
+                    case "abastecimiento de combustible":
+                        var solicitudCombustible = await _conadeContext.Combustibles
+                            .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+
+                        if (solicitudCombustible != null)
+                        {
+                            _conadeContext.Combustibles.Remove(solicitudCombustible);
+                            await _conadeContext.SaveChangesAsync();
+                            respuesta.success = true;
+                            respuesta.mensaje = "Solicitud eliminada con éxito de Combustible.";
+                            return respuesta;
+                        }
+                        break;
+
+                    default:
+                        respuesta.success = false;
+                        respuesta.mensaje = "Tipo de solicitud no válido.";
+                        return respuesta;
+                }
+
+                // Si no se encontró la solicitud en ninguna tabla
                 respuesta.success = false;
-                respuesta.mensaje = "El usuario pertenece al grupo de administradores.";
+                respuesta.mensaje = "No se encontró la solicitud con el ID proporcionado.";
             }
             catch (Exception ex)
             {
@@ -540,100 +613,131 @@ namespace AccesoDatos.Operations
 
 
 
-        public async Task<Respuesta> AprobarRechazarSolicitudAsync(int idSolicitud, int usuarioId, string accion, string observaciones)
+
+        // Revisar en swagger
+
+        public async Task<Respuesta> AprobarRechazarSolicitudAsync(int idSolicitud, int usuarioId, string accion, string observaciones, string tipoSolicitud)
         {
             var respuesta = new Respuesta();
 
             try
             {
-                // Obtener el área del usuario administrador
+                // Obtener el usuario
                 var usuario = await _conadeContext.Usuarios
                     .FirstOrDefaultAsync(u => u.Id == usuarioId);
 
-                //if (usuario == null || usuario.AreaId == null)
-                //{
-                //    respuesta.success = false;
-                //    respuesta.mensaje = "No se pudo encontrar el usuario o el usuario no tiene un área asignada.";
-                //    return respuesta;
-                //}
+                if (usuario == null)
+                {
+                    respuesta.success = false;
+                    respuesta.mensaje = "No se pudo encontrar el usuario.";
+                    return respuesta;
+                }
 
-                //int areaId = usuario.AreaId.Value;
+                // Verificar si el usuario es Admin
+                if (usuario.Rol != "Admin")
+                {
+                    respuesta.success = false;
+                    respuesta.mensaje = "El usuario no tiene permisos para aprobar o rechazar solicitudes.";
+                    return respuesta;
+                }
 
                 // Determinar el tipo de solicitud y el correo del solicitante
                 object solicitud = null;
                 string emailSolicitante = string.Empty;
 
-                //// Obtener la solicitud y el correo del solicitante dependiendo del área
-                //if (areaId == 1) // ServicioPostal
-                //{
-                //    var solicitudPostal = await _conadeContext.ServicioPostals
-                //        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
-                //    if (solicitudPostal != null)
-                //    {
-                //        solicitud = solicitudPostal;
-                //        // Obtener el correo del solicitante desde _nominaContext
-                //        var usuarioSolicitante = await _conadeContext.Usuarios
-                //                .FirstOrDefaultAsync(u => u.Id == solicitudPostal.UsuarioSolicitante);
+                // Buscar la solicitud según el tipo de solicitud proporcionado
+                switch (tipoSolicitud.ToLower())
+                {
+                    case "servicio postal":
+                        var solicitudPostal = await _conadeContext.ServicioPostals
+                            .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+                        if (solicitudPostal != null)
+                        {
+                            solicitud = solicitudPostal;
+                            // Obtener el correo del solicitante desde _nominaContext
+                            var usuarioSolicitante = await _conadeContext.Usuarios
+                                .FirstOrDefaultAsync(u => u.Id == solicitudPostal.UsuarioSolicitante);
+                            if (usuarioSolicitante != null)
+                            {
+                                var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
+                                emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
+                            }
+                        }
+                        break;
 
-                //        if (usuarioSolicitante != null)
-                //        {
-                //            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
-                //            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
-                //        }
+                    case "servicio transporte":
+                        var solicitudTransporte = await _conadeContext.ServicioTransportes
+                            .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+                        if (solicitudTransporte != null)
+                        {
+                            solicitud = solicitudTransporte;
+                            // Obtener el correo del solicitante
+                            var usuarioSolicitante = await _conadeContext.Usuarios
+                                .FirstOrDefaultAsync(u => u.Id == solicitudTransporte.UsuarioSolicitante);
+                            if (usuarioSolicitante != null)
+                            {
+                                var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
+                                emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
+                            }
+                        }
+                        break;
 
-                //    }
-                //}
-                //else if (areaId == 2) // ServicioTransporte
-                //{
-                //    var solicitudTransporte = await _conadeContext.ServicioTransportes
-                //        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
-                //    if (solicitudTransporte != null)
-                //    {
-                //        solicitud = solicitudTransporte;
-                //        // Obtener el correo del solicitante desde _nominaContext
-                //        var usuarioSolicitante = await _conadeContext.Usuarios
-                //                .FirstOrDefaultAsync(u => u.Id == solicitudTransporte.UsuarioSolicitante);
-                //        if (usuarioSolicitante != null)
-                //        {
-                //            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
-                //            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
-                //        }
-                //    }
-                //}
-                //else if (areaId == 3) // UsoInmobiliario
-                //{
-                //    var solicitudInmobiliario = await _conadeContext.UsoInmobiliarios
-                //        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
-                //    if (solicitudInmobiliario != null)
-                //    {
-                //        solicitud = solicitudInmobiliario;
-                //        // Obtener el correo del solicitante desde _nominaContext
-                //        var usuarioSolicitante = await _conadeContext.Usuarios
-                //            .FirstOrDefaultAsync(u => u.Id == solicitudInmobiliario.UsuarioSolicitante);
-                //        if (usuarioSolicitante != null)
-                //        {
-                //            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
-                //            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
-                //        }
-                //    }
-                //}
-                //else if (areaId == 4) // Mantenimiento
-                //{
-                //    var solicitudMantenimiento = await _conadeContext.Mantenimientos
-                //        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
-                //    if (solicitudMantenimiento != null)
-                //    {
-                //        solicitud = solicitudMantenimiento;
-                //        // Obtener el correo del solicitante desde _nominaContext
-                //        var usuarioSolicitante = await _conadeContext.Usuarios
-                //            .FirstOrDefaultAsync(u => u.Id == solicitudMantenimiento.UsuarioSolicitante);
-                //        if (usuarioSolicitante != null)
-                //        {
-                //            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
-                //            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
-                //        }
-                //    }
-                //}
+                    case "eventos":
+                        var solicitudEventos = await _conadeContext.Eventos
+                            .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+                        if (solicitudEventos != null)
+                        {
+                            solicitud = solicitudEventos;
+                            // Obtener el correo del solicitante
+                            var usuarioSolicitante = await _conadeContext.Usuarios
+                                .FirstOrDefaultAsync(u => u.Id == solicitudEventos.UsuarioSolicitante);
+                            if (usuarioSolicitante != null)
+                            {
+                                var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
+                                emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
+                            }
+                        }
+                        break;
+
+                    case "mantenimiento":
+                        var solicitudMantenimiento = await _conadeContext.Mantenimientos
+                            .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+                        if (solicitudMantenimiento != null)
+                        {
+                            solicitud = solicitudMantenimiento;
+                            // Obtener el correo del solicitante
+                            var usuarioSolicitante = await _conadeContext.Usuarios
+                                .FirstOrDefaultAsync(u => u.Id == solicitudMantenimiento.UsuarioSolicitante);
+                            if (usuarioSolicitante != null)
+                            {
+                                var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
+                                emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
+                            }
+                        }
+                        break;
+
+                    case "abastecimiento de combustible":
+                        var solicitudCombustible = await _conadeContext.Combustibles
+                            .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+                        if (solicitudCombustible != null)
+                        {
+                            solicitud = solicitudCombustible;
+                            // Obtener el correo del solicitante
+                            var usuarioSolicitante = await _conadeContext.Usuarios
+                                .FirstOrDefaultAsync(u => u.Id == solicitudCombustible.UsuarioSolicitante);
+                            if (usuarioSolicitante != null)
+                            {
+                                var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
+                                emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
+                            }
+                        }
+                        break;
+
+                    default:
+                        respuesta.success = false;
+                        respuesta.mensaje = "Tipo de solicitud no válido.";
+                        return respuesta;
+                }
 
                 if (solicitud == null)
                 {
@@ -647,8 +751,9 @@ namespace AccesoDatos.Operations
                 {
                     ServicioPostal sp => sp.Estado,
                     ServicioTransporte st => st.Estado,
-                    //UsoInmobiliario ui => ui.Estado,
+                    Evento ev => ev.Estado,
                     Mantenimiento m => m.Estado,
+                    Combustible c => c.Estado,
                     _ => null
                 };
 
@@ -672,15 +777,20 @@ namespace AccesoDatos.Operations
                         st.Estado = "Atendida";
                         st.Observaciones = observaciones;
                     }
-                    //else if (solicitud is UsoInmobiliario ui)
-                    //{
-                    //    ui.Estado = "Atendida";
-                    //    ui.Observaciones = observaciones;
-                    //}
+                    else if (solicitud is Evento ev)
+                    {
+                        ev.Estado = "Atendida";
+                        ev.Observaciones = observaciones;
+                    }
                     else if (solicitud is Mantenimiento m)
                     {
                         m.Estado = "Atendida";
                         m.Observaciones = observaciones;
+                    }
+                    else if (solicitud is Combustible c)
+                    {
+                        c.Estado = "Atendida";
+                        c.Observaciones = observaciones;
                     }
                 }
                 else if (accion == "Rechazar")
@@ -695,15 +805,20 @@ namespace AccesoDatos.Operations
                         st.Estado = "Rechazada";
                         st.Observaciones = observaciones;
                     }
-                    //else if (solicitud is UsoInmobiliario ui)
-                    //{
-                    //    ui.Estado = "Rechazada";
-                    //    ui.Observaciones = observaciones;
-                    //}
+                    else if (solicitud is Evento ev)
+                    {
+                        ev.Estado = "Rechazada";
+                        ev.Observaciones = observaciones;
+                    }
                     else if (solicitud is Mantenimiento m)
                     {
                         m.Estado = "Rechazada";
                         m.Observaciones = observaciones;
+                    }
+                    else if (solicitud is Combustible c)
+                    {
+                        c.Estado = "Rechazada";
+                        c.Observaciones = observaciones;
                     }
                 }
                 else
@@ -747,8 +862,6 @@ namespace AccesoDatos.Operations
                         }
                     }
                 }
-
-                
             }
             catch (Exception ex)
             {
@@ -758,6 +871,7 @@ namespace AccesoDatos.Operations
 
             return respuesta;
         }
+
 
         // Método para obtener el usuario y empleado asociado
         public async Task<dynamic> ObtenerCorreoConEmpleadoAsync(string nombreUsuario)
