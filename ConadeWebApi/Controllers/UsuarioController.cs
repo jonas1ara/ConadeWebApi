@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq.Expressions;
 
 
 namespace ConadeWebApi.Controllers
@@ -26,7 +27,7 @@ namespace ConadeWebApi.Controllers
 
 
         [HttpPost("Crear")]
-        public async Task<IActionResult> CrearUsuario(string nombre, string apellidoPaterno, string apellidoMaterno, string claveEmpleado, string nombreUsuario, string contrasena, string rol, int? areaId)
+        public async Task<IActionResult> CrearUsuario(string nombre, string apellidoPaterno, string apellidoMaterno, string claveEmpleado, string nombreUsuario, string contrasena, string rol, int[] areasId)
         {
             // Crear un objeto de respuesta
             var respuesta = new Respuesta();
@@ -34,7 +35,7 @@ namespace ConadeWebApi.Controllers
             try
             {
                 // Llamar al método de creación de usuario y obtener el ID del nuevo usuario
-                var idUsuario = await _dao.CrearUsuarioAsync(nombre, apellidoPaterno, apellidoMaterno, claveEmpleado, nombreUsuario, contrasena, rol, areaId);
+                var idUsuario = await _dao.CrearUsuarioAsync(nombre, apellidoPaterno, apellidoMaterno, claveEmpleado, nombreUsuario, contrasena, rol, areasId);
 
                 // Si el ID es nulo, el empleado no fue encontrado
                 if (idUsuario == null)
@@ -130,14 +131,58 @@ namespace ConadeWebApi.Controllers
             }
         }
 
-
-
-
         [HttpGet("Listar")]
         public Respuesta Listar()
         {
             return _dao.ObtenerUsuarios();
         }
+
+        [HttpGet("AreasAsignadas")]
+        public async Task<IActionResult> ListarUsuariosArea()
+        {
+            var respuesta = new Respuesta();
+
+            try
+            {
+                var resultado = await _dao.ListarUsuarioAreasAsync();
+
+                respuesta.success = true;
+                respuesta.mensaje = "Datos obtenidos correctamente.";
+                respuesta.obj = resultado;
+
+                return Ok(respuesta);
+            }
+            catch (Exception ex)
+            {
+                respuesta.success = false;
+                respuesta.mensaje = ex.Message;
+                return StatusCode(500, respuesta);
+            }
+        }
+
+        [HttpGet("AreasPorUsuario")]
+        public async Task<IActionResult> AreaPorUsuario(int usuarioId)
+        {
+            var respuesta = new Respuesta();
+
+            try
+            {
+                var resultado = await _dao.ListarAreasPorUsuarioAsync(usuarioId);
+
+                respuesta.success = true;
+                respuesta.mensaje = "Datos obtenidos correctamente.";
+                respuesta.obj = resultado;
+
+                return Ok(respuesta);
+            }
+            catch (Exception ex)
+            {
+                respuesta.success = false;
+                respuesta.mensaje = ex.Message;
+                return StatusCode(500, respuesta);
+            }
+        }
+
 
         [HttpGet("ObtenerUsuarioConEmpleado")]
         public async Task<IActionResult> ObtenerUsuarioConEmpleado(string nombreUsuario)

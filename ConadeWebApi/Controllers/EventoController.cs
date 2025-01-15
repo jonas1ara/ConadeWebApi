@@ -10,23 +10,24 @@ namespace ConadeWebApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsoInmobiliarioController : ControllerBase
+    public class EventoController : ControllerBase
     {
-        private readonly UsoInmobiliarioDao _dao;
+        private readonly EventosDao _dao;
 
-        public UsoInmobiliarioController(UsoInmobiliarioDao dao)
+        public EventoController(EventosDao dao)
         {
             _dao = dao;
         }
 
-        // Crear un nuevo Uso Inmobiliario
+        // Crear un nuevo Evento
         [HttpPost("Crear")]
-        public async Task<IActionResult> CrearUsoInmobiliario(
+        public async Task<IActionResult> CrearEvento(
             string numeroDeSerie,
             DateTime fechaSolicitud,
             int areaSolicitante,
             int usuarioSolicitante,
             string tipoSolicitud,
+            string tipoServicio,
             string sala,
             int catalogoId,
             string fechaInicio, // Usar string en lugar de DateOnly
@@ -49,12 +50,13 @@ namespace ConadeWebApi.Controllers
                 TimeOnly horarioFinTimeOnly = TimeOnly.Parse(horarioFin);
 
                 // Llamar al método de creación de UsoInmobiliario y obtener el ID del nuevo registro
-                var idUsoInmobiliario = await _dao.CrearUsoInmobiliarioAsync(
+                var idEvento = await _dao.CrearEventoAsync(
                     numeroDeSerie,
                     fechaSolicitud,
                     areaSolicitante,
                     usuarioSolicitante,
                     tipoSolicitud,
+                    tipoServicio,
                     sala,
                     catalogoId,
                     fechaInicioDateOnly,
@@ -64,7 +66,7 @@ namespace ConadeWebApi.Controllers
                     estado,
                     observaciones);
 
-                if (idUsoInmobiliario == null)
+                if (idEvento == null)
                 {
                     respuesta.success = false;
                     respuesta.mensaje = "Error al crear la solicitud.";
@@ -72,8 +74,8 @@ namespace ConadeWebApi.Controllers
                 }
 
                 respuesta.success = true;
-                respuesta.mensaje = "Uso Inmobiliario creado correctamente.";
-                respuesta.obj = idUsoInmobiliario;
+                respuesta.mensaje = "Evento creado correctamente.";
+                respuesta.obj = idEvento;
                 return Ok(respuesta);
             }
             catch (ArgumentException ex)
@@ -92,14 +94,14 @@ namespace ConadeWebApi.Controllers
         }
 
 
-        // Obtener todos los Uso Inmobiliarios
+        // Obtener todos los Eventos
         [HttpGet("ObtenerTodos")]
-        public async Task<IActionResult> ObtenerUsoInmobiliarios()
+        public async Task<IActionResult> ObtenerEventos()
         {
             try
             {
-                var usoInmobiliarios = await _dao.ObtenerUsoInmobiliariosAsync();
-                return Ok(usoInmobiliarios);
+                var eventos = await _dao.ObtenerEventosAsync();
+                return Ok(eventos);
             }
             catch (Exception ex)
             {
@@ -107,18 +109,18 @@ namespace ConadeWebApi.Controllers
             }
         }
 
-        // Obtener un Uso Inmobiliario por ID
+        // Obtener un Evento por ID
         [HttpGet("ObtenerPorId/{id}")]
-        public async Task<IActionResult> ObtenerUsoInmobiliarioPorId(int id)
+        public async Task<IActionResult> ObtenerEventoPorId(int id)
         {
             try
             {
-                var usoInmobiliario = await _dao.ObtenerUsoInmobiliarioPorIdAsync(id);
-                if (usoInmobiliario == null)
+                var evento = await _dao.ObtenerEventosPorIdAsync(id);
+                if (evento == null)
                 {
-                    return NotFound(new { success = false, message = "Uso Inmobiliario no encontrado." });
+                    return NotFound(new { success = false, message = "Evento no encontrado." });
                 }
-                return Ok(usoInmobiliario);
+                return Ok(evento);
             }
             catch (Exception ex)
             {
@@ -126,23 +128,23 @@ namespace ConadeWebApi.Controllers
             }
         }
 
-        // Actualizar un Uso Inmobiliario
+        // Actualizar un Evento
         [HttpPut("Actualizar/{id}")]
-        public async Task<IActionResult> ActualizarUsoInmobiliario(int id, [FromBody] UsoInmobiliario usoInmobiliario)
+        public async Task<IActionResult> ActualizarEvento(int id, [FromBody] Evento evento)
         {
             try
             {
-                if (id != usoInmobiliario.Id)
+                if (id != evento.Id)
                 {
-                    return BadRequest(new { success = false, message = "El ID del uso inmobiliario no coincide." });
+                    return BadRequest(new { success = false, message = "El ID del evento no coincide." });
                 }
 
-                var resultado = await _dao.ActualizarUsoInmobiliarioAsync(usoInmobiliario);
+                var resultado = await _dao.ActualizarEventoAsync(evento);
                 if (resultado)
                 {
-                    return Ok(new { success = true, message = "Uso Inmobiliario actualizado correctamente." });
+                    return Ok(new { success = true, message = "Evento actualizado correctamente." });
                 }
-                return NotFound(new { success = false, message = "Uso Inmobiliario no encontrado." });
+                return NotFound(new { success = false, message = "Evento no encontrado." });
             }
             catch (Exception ex)
             {
@@ -152,16 +154,16 @@ namespace ConadeWebApi.Controllers
 
         // Eliminar un Uso Inmobiliario
         [HttpDelete("Eliminar/{id}")]
-        public async Task<IActionResult> EliminarUsoInmobiliario(int id)
+        public async Task<IActionResult> EliminarEvento(int id)
         {
             try
             {
-                var resultado = await _dao.EliminarUsoInmobiliarioAsync(id);
+                var resultado = await _dao.EliminarEventoAsync(id);
                 if (resultado)
                 {
-                    return Ok(new { success = true, message = "Uso Inmobiliario eliminado correctamente." });
+                    return Ok(new { success = true, message = "Evento eliminado correctamente." });
                 }
-                return NotFound(new { success = false, message = "Uso Inmobiliario no encontrado." });
+                return NotFound(new { success = false, message = "Evento no encontrado." });
             }
             catch (Exception ex)
             {

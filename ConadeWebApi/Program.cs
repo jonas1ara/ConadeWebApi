@@ -21,8 +21,9 @@ builder.Services.AddDbContext<NominaOsimulacionContext>(options =>
 // Registrar Dao's
 builder.Services.AddScoped<AreaDao>();
 builder.Services.AddScoped<CatAreaDao>();
+builder.Services.AddScoped<CombustibleDao>();
 builder.Services.AddScoped<MantenimientoDao>();
-builder.Services.AddScoped<UsoInmobiliarioDao>();
+builder.Services.AddScoped<EventosDao>();
 builder.Services.AddScoped<UsuarioDao>();
 builder.Services.AddScoped<ServicioPostalDao>();
 builder.Services.AddScoped<ServicioTransporteDao>();

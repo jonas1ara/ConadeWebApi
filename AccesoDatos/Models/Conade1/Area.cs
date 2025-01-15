@@ -15,22 +15,20 @@ public partial class Area
     public virtual ICollection<CatArea> CatAreas { get; set; } = new List<CatArea>();
 
     [JsonIgnore]
+    public virtual ICollection<Combustible> Combustibles { get; set; } = new List<Combustible>();
 
+    [JsonIgnore]
+    public virtual ICollection<Evento> Eventos { get; set; } = new List<Evento>();
+
+    [JsonIgnore]
     public virtual ICollection<Mantenimiento> Mantenimientos { get; set; } = new List<Mantenimiento>();
 
     [JsonIgnore]
-
     public virtual ICollection<ServicioPostal> ServicioPostals { get; set; } = new List<ServicioPostal>();
 
     [JsonIgnore]
-
     public virtual ICollection<ServicioTransporte> ServicioTransportes { get; set; } = new List<ServicioTransporte>();
 
     [JsonIgnore]
-
-    public virtual ICollection<UsoInmobiliario> UsoInmobiliarios { get; set; } = new List<UsoInmobiliario>();
-
-    [JsonIgnore]
-
-    public virtual ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
+    public virtual ICollection<UsuarioArea> UsuarioAreas { get; set; } = new List<UsuarioArea>();
 }

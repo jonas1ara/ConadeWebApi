@@ -25,7 +25,7 @@ namespace AccesoDatos.Operations
                         string tipoSolicitud,
                         int catalogoId,
                         DateOnly fechaEnvio,
-                        DateOnly fechaRecepcionMaxima,
+                        DateOnly FechaRecepcion,
                         string estado,
                         string? descripcionServicio = null,
                         string? observaciones = null)
@@ -51,7 +51,7 @@ namespace AccesoDatos.Operations
             }
 
             // Validar que la fecha de envío sea antes que la fecha de recepción máxima
-            if (fechaEnvio > fechaRecepcionMaxima)
+            if (fechaEnvio > FechaRecepcion)
             {
                 throw new ArgumentException("La fecha de recepción maxima debe ser después o el mismo día de la fecha de envio.");
             }
@@ -67,7 +67,7 @@ namespace AccesoDatos.Operations
                 TipoSolicitud = tipoSolicitud,
                 CatalogoId = catalogoId,
                 FechaEnvio = fechaEnvio,  // Se usa DateOnly directamente
-                FechaRecepcionMaxima = fechaRecepcionMaxima,  // Se usa DateOnly directamente
+                FechaRecepcion = FechaRecepcion,  // Se usa DateOnly directamente
                 DescripcionServicio = descripcionServicio,
                 AreaId = 1,  // Se ajusta al valor por defecto
                 Estado = estado,
@@ -123,7 +123,7 @@ namespace AccesoDatos.Operations
             existingServicioPostal.UsuarioSolicitante = servicioPostal.UsuarioSolicitante;
             existingServicioPostal.CatalogoId = servicioPostal.CatalogoId;
             existingServicioPostal.FechaEnvio = servicioPostal.FechaEnvio;
-            existingServicioPostal.FechaRecepcionMaxima = servicioPostal.FechaRecepcionMaxima;
+            existingServicioPostal.FechaRecepcion = servicioPostal.FechaRecepcion;
             existingServicioPostal.DescripcionServicio = servicioPostal.DescripcionServicio;
             existingServicioPostal.Estado = servicioPostal.Estado;
             existingServicioPostal.Observaciones = servicioPostal.Observaciones;

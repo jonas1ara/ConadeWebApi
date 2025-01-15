@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace AccesoDatos.Models.Conade1;
 
-public partial class ServicioPostal
+public partial class Combustible
 {
     public int Id { get; set; }
 
@@ -15,17 +15,13 @@ public partial class ServicioPostal
 
     public int UsuarioSolicitante { get; set; }
 
-    public string TipoDeServicio { get; set; } = null!;
-
     public string TipoSolicitud { get; set; } = null!;
 
     public int CatalogoId { get; set; }
 
-    public DateOnly FechaEnvio { get; set; }
-
-    public DateOnly? FechaRecepcion { get; set; }
-
     public string? DescripcionServicio { get; set; }
+
+    public DateTime Fecha { get; set; }
 
     public int? AreaId { get; set; }
 

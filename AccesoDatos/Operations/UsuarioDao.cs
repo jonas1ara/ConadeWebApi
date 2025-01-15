@@ -27,16 +27,20 @@ namespace AccesoDatos.Operations
         }
 
         public async Task<int?> CrearUsuarioAsync(
-                                string nombre,
-                                string apellidoPaterno,
-                                string apellidoMaterno,
-                                string claveEmpleado,
-                                string nombreUsuario,
-                                string contrasena,
-                                string rol,
-                                int? areaId)
+                        string nombre,
+                        string apellidoPaterno,
+                        string apellidoMaterno,
+                        string claveEmpleado,
+                        string nombreUsuario,
+                        string contrasena,
+                        string rol,
+                        int[] areasId)
         {
-            var respuesta = new Respuesta();
+            // Validar que todas las áreas estén en el rango permitido (1 a 5)
+            if (areasId == null || !areasId.Any() || areasId.Any(areaId => areaId < 1 || areaId > 5))
+            {
+                throw new Exception("Las áreas proporcionadas no son válidas. Asegúrate de que todas las áreas estén entre 1 y 5.");
+            }
 
             // Verificar si ya existe un usuario con el nombre de usuario proporcionado
             var usuarioExistente = await _conadeContext.Usuarios
@@ -44,10 +48,8 @@ namespace AccesoDatos.Operations
 
             if (usuarioExistente != null)
             {
-                // Lanzamos una excepción para que el controlador pueda manejarla y devolver una respuesta adecuada
                 throw new Exception("Ya existe un usuario con ese nombre de usuario.");
             }
-
 
             // Verificar si el empleado existe en la base de datos Nómina
             var empleado = await _nominaContext.Empleados
@@ -77,10 +79,11 @@ namespace AccesoDatos.Operations
             var nuevoUsuario = new Usuario
             {
                 Nombre = nombre,
+                ApellidoPaterno = apellidoPaterno,
+                ApellidoMaterno = apellidoMaterno,
                 NombreUsuario = nombreUsuario,
                 Contrasena = contrasena, // Guardar la contraseña como hash
                 Rol = rol,
-                AreaId = areaId,
                 IdEmpleado = empleado.IdEmpleado
             };
 
@@ -88,8 +91,21 @@ namespace AccesoDatos.Operations
             _conadeContext.Usuarios.Add(nuevoUsuario);
             await _conadeContext.SaveChangesAsync();
 
+            // Asignar las áreas válidas
+            var usuarioAreas = areasId.Select(areaId => new UsuarioArea
+            {
+                UsuarioId = nuevoUsuario.Id,
+                AreaId = areaId,
+                FechaAsignacion = DateTime.Now
+            });
+
+            await _conadeContext.UsuarioAreas.AddRangeAsync(usuarioAreas);
+            await _conadeContext.SaveChangesAsync();
+
             return nuevoUsuario.Id; // Retorna el ID del nuevo usuario
         }
+
+
 
 
 
@@ -295,6 +311,23 @@ namespace AccesoDatos.Operations
             return respuesta;
         }
 
+        public async Task<List<UsuarioArea>> ListarUsuarioAreasAsync()
+        {
+            return await _conadeContext.UsuarioAreas
+                .Include(ua => ua.Usuario) // Incluye información del usuario
+                .Include(ua => ua.Area)    // Incluye información del área
+                .ToListAsync();
+        }
+
+        public async Task<List<Area>> ListarAreasPorUsuarioAsync(int usuarioId)
+        {
+            return await _conadeContext.UsuarioAreas
+                .Where(ua => ua.UsuarioId == usuarioId)
+                .Include(ua => ua.Area) // Incluye la información del área
+                .Select(ua => ua.Area) // Selecciona solo el área
+                .ToListAsync();
+        }
+
         public Respuesta EliminarUsuarioPorNombreUsuario(string nombreUsuario)
         {
             var respuesta = new Respuesta();
@@ -334,15 +367,15 @@ namespace AccesoDatos.Operations
                     .Where(s => s.UsuarioSolicitante == usuarioId)
                     .ToListAsync();
 
-                var solicitudesUsoInmobiliario = await _conadeContext.UsoInmobiliarios
-                    .Where(s => s.UsuarioSolicitante == usuarioId)
-                    .ToListAsync();
+                //var solicitudesUsoInmobiliario = await _conadeContext.UsoInmobiliarios
+                //    .Where(s => s.UsuarioSolicitante == usuarioId)
+                //    .ToListAsync();
 
                 // Combinar todas las solicitudes en una lista
                 var todasLasSolicitudes = solicitudesServicioPostal
                     .Cast<object>()
                     .Concat(solicitudesMantenimiento.Cast<object>())
-                    .Concat(solicitudesUsoInmobiliario.Cast<object>())
+                    //.Concat(solicitudesUsoInmobiliario.Cast<object>())
                     .ToList();
 
                 if (!todasLasSolicitudes.Any())
@@ -401,18 +434,18 @@ namespace AccesoDatos.Operations
                     return respuesta;
                 }
 
-                // Buscar en la tabla UsoInmobiliario
-                var solicitudUsoInmobiliario = await _conadeContext.UsoInmobiliarios
-                    .FirstOrDefaultAsync(s => s.Id == idSolicitud && s.UsuarioSolicitante == usuarioId);
+                //// Buscar en la tabla UsoInmobiliario
+                //var solicitudUsoInmobiliario = await _conadeContext.UsoInmobiliarios
+                //    .FirstOrDefaultAsync(s => s.Id == idSolicitud && s.UsuarioSolicitante == usuarioId);
 
-                if (solicitudUsoInmobiliario != null)
-                {
-                    _conadeContext.UsoInmobiliarios.Remove(solicitudUsoInmobiliario);
-                    await _conadeContext.SaveChangesAsync();
-                    respuesta.success = true;
-                    respuesta.mensaje = "Solicitud eliminada con éxito de UsoInmobiliario.";
-                    return respuesta;
-                }
+                //if (solicitudUsoInmobiliario != null)
+                //{
+                //    _conadeContext.UsoInmobiliarios.Remove(solicitudUsoInmobiliario);
+                //    await _conadeContext.SaveChangesAsync();
+                //    respuesta.success = true;
+                //    respuesta.mensaje = "Solicitud eliminada con éxito de UsoInmobiliario.";
+                //    return respuesta;
+                //}
 
                 // Buscar en la tabla Mantenimiento
                 var solicitudMantenimiento = await _conadeContext.Mantenimientos
@@ -450,21 +483,21 @@ namespace AccesoDatos.Operations
                 var usuario = await _conadeContext.Usuarios
                     .FirstOrDefaultAsync(u => u.Id == usuarioId);
 
-                if (usuario == null || usuario.AreaId == null)
-                {
-                    respuesta.success = false;
-                    respuesta.mensaje = "No se pudo encontrar el usuario o el usuario no tiene un área asignada.";
-                    return respuesta;
-                }
+                //if (usuario == null || usuario.AreaId == null)
+                //{
+                //    respuesta.success = false;
+                //    respuesta.mensaje = "No se pudo encontrar el usuario o el usuario no tiene un área asignada.";
+                //    return respuesta;
+                //}
 
-                int areaId = usuario.AreaId.Value;
+                //int areaId = usuario.AreaId.Value;
 
                 // Diccionario de tablas de solicitudes
                 var tablasSolicitudes = new List<(object solicitud, string mensaje, IQueryable<object> tabla)>
                 {
                     (new ServicioPostal(), "ServicioPostal", _conadeContext.ServicioPostals.AsQueryable()),
                     (new ServicioTransporte(), "ServicioTransporte", _conadeContext.ServicioTransportes.AsQueryable()),
-                    (new UsoInmobiliario(), "UsoInmobiliario", _conadeContext.UsoInmobiliarios.AsQueryable()),
+                    //(new UsoInmobiliario(), "UsoInmobiliario", _conadeContext.UsoInmobiliarios.AsQueryable()),
                     (new Mantenimiento(), "Mantenimiento", _conadeContext.Mantenimientos.AsQueryable())
                 };
 
@@ -517,90 +550,90 @@ namespace AccesoDatos.Operations
                 var usuario = await _conadeContext.Usuarios
                     .FirstOrDefaultAsync(u => u.Id == usuarioId);
 
-                if (usuario == null || usuario.AreaId == null)
-                {
-                    respuesta.success = false;
-                    respuesta.mensaje = "No se pudo encontrar el usuario o el usuario no tiene un área asignada.";
-                    return respuesta;
-                }
+                //if (usuario == null || usuario.AreaId == null)
+                //{
+                //    respuesta.success = false;
+                //    respuesta.mensaje = "No se pudo encontrar el usuario o el usuario no tiene un área asignada.";
+                //    return respuesta;
+                //}
 
-                int areaId = usuario.AreaId.Value;
+                //int areaId = usuario.AreaId.Value;
 
                 // Determinar el tipo de solicitud y el correo del solicitante
                 object solicitud = null;
                 string emailSolicitante = string.Empty;
 
-                // Obtener la solicitud y el correo del solicitante dependiendo del área
-                if (areaId == 1) // ServicioPostal
-                {
-                    var solicitudPostal = await _conadeContext.ServicioPostals
-                        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
-                    if (solicitudPostal != null)
-                    {
-                        solicitud = solicitudPostal;
-                        // Obtener el correo del solicitante desde _nominaContext
-                        var usuarioSolicitante = await _conadeContext.Usuarios
-                                .FirstOrDefaultAsync(u => u.Id == solicitudPostal.UsuarioSolicitante);
+                //// Obtener la solicitud y el correo del solicitante dependiendo del área
+                //if (areaId == 1) // ServicioPostal
+                //{
+                //    var solicitudPostal = await _conadeContext.ServicioPostals
+                //        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+                //    if (solicitudPostal != null)
+                //    {
+                //        solicitud = solicitudPostal;
+                //        // Obtener el correo del solicitante desde _nominaContext
+                //        var usuarioSolicitante = await _conadeContext.Usuarios
+                //                .FirstOrDefaultAsync(u => u.Id == solicitudPostal.UsuarioSolicitante);
 
-                        if (usuarioSolicitante != null)
-                        {
-                            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
-                            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
-                        }
+                //        if (usuarioSolicitante != null)
+                //        {
+                //            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
+                //            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
+                //        }
 
-                    }
-                }
-                else if (areaId == 2) // ServicioTransporte
-                {
-                    var solicitudTransporte = await _conadeContext.ServicioTransportes
-                        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
-                    if (solicitudTransporte != null)
-                    {
-                        solicitud = solicitudTransporte;
-                        // Obtener el correo del solicitante desde _nominaContext
-                        var usuarioSolicitante = await _conadeContext.Usuarios
-                                .FirstOrDefaultAsync(u => u.Id == solicitudTransporte.UsuarioSolicitante);
-                        if (usuarioSolicitante != null)
-                        {
-                            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
-                            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
-                        }
-                    }
-                }
-                else if (areaId == 3) // UsoInmobiliario
-                {
-                    var solicitudInmobiliario = await _conadeContext.UsoInmobiliarios
-                        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
-                    if (solicitudInmobiliario != null)
-                    {
-                        solicitud = solicitudInmobiliario;
-                        // Obtener el correo del solicitante desde _nominaContext
-                        var usuarioSolicitante = await _conadeContext.Usuarios
-                            .FirstOrDefaultAsync(u => u.Id == solicitudInmobiliario.UsuarioSolicitante);
-                        if (usuarioSolicitante != null)
-                        {
-                            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
-                            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
-                        }
-                    }
-                }
-                else if (areaId == 4) // Mantenimiento
-                {
-                    var solicitudMantenimiento = await _conadeContext.Mantenimientos
-                        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
-                    if (solicitudMantenimiento != null)
-                    {
-                        solicitud = solicitudMantenimiento;
-                        // Obtener el correo del solicitante desde _nominaContext
-                        var usuarioSolicitante = await _conadeContext.Usuarios
-                            .FirstOrDefaultAsync(u => u.Id == solicitudMantenimiento.UsuarioSolicitante);
-                        if (usuarioSolicitante != null)
-                        {
-                            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
-                            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
-                        }
-                    }
-                }
+                //    }
+                //}
+                //else if (areaId == 2) // ServicioTransporte
+                //{
+                //    var solicitudTransporte = await _conadeContext.ServicioTransportes
+                //        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+                //    if (solicitudTransporte != null)
+                //    {
+                //        solicitud = solicitudTransporte;
+                //        // Obtener el correo del solicitante desde _nominaContext
+                //        var usuarioSolicitante = await _conadeContext.Usuarios
+                //                .FirstOrDefaultAsync(u => u.Id == solicitudTransporte.UsuarioSolicitante);
+                //        if (usuarioSolicitante != null)
+                //        {
+                //            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
+                //            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
+                //        }
+                //    }
+                //}
+                //else if (areaId == 3) // UsoInmobiliario
+                //{
+                //    var solicitudInmobiliario = await _conadeContext.UsoInmobiliarios
+                //        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+                //    if (solicitudInmobiliario != null)
+                //    {
+                //        solicitud = solicitudInmobiliario;
+                //        // Obtener el correo del solicitante desde _nominaContext
+                //        var usuarioSolicitante = await _conadeContext.Usuarios
+                //            .FirstOrDefaultAsync(u => u.Id == solicitudInmobiliario.UsuarioSolicitante);
+                //        if (usuarioSolicitante != null)
+                //        {
+                //            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
+                //            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
+                //        }
+                //    }
+                //}
+                //else if (areaId == 4) // Mantenimiento
+                //{
+                //    var solicitudMantenimiento = await _conadeContext.Mantenimientos
+                //        .FirstOrDefaultAsync(s => s.Id == idSolicitud);
+                //    if (solicitudMantenimiento != null)
+                //    {
+                //        solicitud = solicitudMantenimiento;
+                //        // Obtener el correo del solicitante desde _nominaContext
+                //        var usuarioSolicitante = await _conadeContext.Usuarios
+                //            .FirstOrDefaultAsync(u => u.Id == solicitudMantenimiento.UsuarioSolicitante);
+                //        if (usuarioSolicitante != null)
+                //        {
+                //            var correoUsuarioSolicitante = await ObtenerCorreoConEmpleadoAsync(usuarioSolicitante.NombreUsuario);
+                //            emailSolicitante = correoUsuarioSolicitante.Empleado.CorreoElectronico;
+                //        }
+                //    }
+                //}
 
                 if (solicitud == null)
                 {
@@ -614,7 +647,7 @@ namespace AccesoDatos.Operations
                 {
                     ServicioPostal sp => sp.Estado,
                     ServicioTransporte st => st.Estado,
-                    UsoInmobiliario ui => ui.Estado,
+                    //UsoInmobiliario ui => ui.Estado,
                     Mantenimiento m => m.Estado,
                     _ => null
                 };
@@ -639,11 +672,11 @@ namespace AccesoDatos.Operations
                         st.Estado = "Atendida";
                         st.Observaciones = observaciones;
                     }
-                    else if (solicitud is UsoInmobiliario ui)
-                    {
-                        ui.Estado = "Atendida";
-                        ui.Observaciones = observaciones;
-                    }
+                    //else if (solicitud is UsoInmobiliario ui)
+                    //{
+                    //    ui.Estado = "Atendida";
+                    //    ui.Observaciones = observaciones;
+                    //}
                     else if (solicitud is Mantenimiento m)
                     {
                         m.Estado = "Atendida";
@@ -662,11 +695,11 @@ namespace AccesoDatos.Operations
                         st.Estado = "Rechazada";
                         st.Observaciones = observaciones;
                     }
-                    else if (solicitud is UsoInmobiliario ui)
-                    {
-                        ui.Estado = "Rechazada";
-                        ui.Observaciones = observaciones;
-                    }
+                    //else if (solicitud is UsoInmobiliario ui)
+                    //{
+                    //    ui.Estado = "Rechazada";
+                    //    ui.Observaciones = observaciones;
+                    //}
                     else if (solicitud is Mantenimiento m)
                     {
                         m.Estado = "Rechazada";

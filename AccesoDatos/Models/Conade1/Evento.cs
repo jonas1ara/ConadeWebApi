@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace AccesoDatos.Models.Conade1;
 
-public partial class UsoInmobiliario
+public partial class Evento
 {
     public int Id { get; set; }
 
@@ -17,9 +17,13 @@ public partial class UsoInmobiliario
 
     public string TipoSolicitud { get; set; } = null!;
 
+    public string TipoServicio { get; set; } = null!;
+
     public string Sala { get; set; } = null!;
 
     public int CatalogoId { get; set; }
+
+    public string? DescripcionServicio { get; set; }
 
     public DateOnly FechaInicio { get; set; }
 

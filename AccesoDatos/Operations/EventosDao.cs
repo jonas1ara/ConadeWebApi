@@ -7,23 +7,24 @@ using System.Threading.Tasks;
 
 namespace AccesoDatos.Operations
 {
-    public class UsoInmobiliarioDao
+    public class EventosDao
     {
         private readonly Conade1Context _context;
 
         // Constructor
-        public UsoInmobiliarioDao(Conade1Context context)
+        public EventosDao(Conade1Context context)
         {
             _context = context;
         }
 
-        // Crear un nuevo Uso Inmobiliario
-        public async Task<int?> CrearUsoInmobiliarioAsync(
+        // Crear un nuevo Evento
+        public async Task<int?> CrearEventoAsync(
                 string numeroDeSerie,
                 DateTime fechaSolicitud,
                 int areaSolicitante,
                 int usuarioSolicitante,
                 string tipoSolicitud,
+                string tipoServicio,
                 string sala,
                 int catalogoId,
                 DateOnly fechaInicio,
@@ -34,9 +35,9 @@ namespace AccesoDatos.Operations
                 string? observaciones = null)
         {
             // Validar tipo de solicitud (debe ser 'Uso Inmobiliario')
-            if (tipoSolicitud != "Uso Inmobiliario")
+            if (tipoSolicitud != "Eventos")
             {
-                throw new ArgumentException("El tipo de solicitud debe ser 'Uso Inmobiliario'.");
+                throw new ArgumentException("El tipo de solicitud debe ser 'Eventos'.");
             }
 
             // Validar estado (debe ser uno de los valores permitidos)
@@ -46,7 +47,7 @@ namespace AccesoDatos.Operations
                 throw new ArgumentException("El estado debe ser 'Solicitada', 'Atendida' o 'Rechazada'.");
             }
 
-            // Validar que la fecha de envío sea antes que la fecha de recepción máxima
+            // Validar que la fecha de Inicio sea mayor a la fecha de fin
             if (fechaInicio > fechaFin)
             {
                 throw new ArgumentException("La fecha de fin debe ser después o el mismo día de la fecha de inicio.");
@@ -57,14 +58,15 @@ namespace AccesoDatos.Operations
                 throw new ArgumentException("El horario de inicio no puede ser posterior o igual al horario de fin.");
             }
 
-            // Crear un nuevo objeto de UsoInmobiliario con los datos proporcionados
-            var usoInmobiliario = new UsoInmobiliario
+            // Crear un nuevo objeto de evento con los datos proporcionados
+            var evento = new Evento
             {
                 NumeroDeSerie = numeroDeSerie,
                 FechaSolicitud = fechaSolicitud,
                 AreaSolicitante = areaSolicitante,
                 UsuarioSolicitante = usuarioSolicitante,
                 TipoSolicitud = tipoSolicitud,
+                TipoServicio = tipoServicio,
                 Sala = sala,
                 CatalogoId = catalogoId,
                 FechaInicio = fechaInicio,
@@ -76,67 +78,67 @@ namespace AccesoDatos.Operations
                 Observaciones = observaciones
             };
 
-            // Agregar el nuevo UsoInmobiliario a la base de datos
-            _context.UsoInmobiliarios.Add(usoInmobiliario);
+            // Agregar el nuevo evento a la base de datos
+            _context.Eventos.Add(evento);
             await _context.SaveChangesAsync();
 
-            // Retornar el ID del nuevo UsoInmobiliario creado
-            return usoInmobiliario.Id;
+            // Retornar el ID del nuevo evento creado
+            return evento.Id;
         }
 
 
-        // Obtener todos los Uso Inmobiliarios
-        public async Task<List<UsoInmobiliario>> ObtenerUsoInmobiliariosAsync()
+        // Obtener todos los Eventos
+        public async Task<List<Evento>> ObtenerEventosAsync()
         {
-            return await _context.UsoInmobiliarios.ToListAsync();
+            return await _context.Eventos.ToListAsync();
         }
 
         // Obtener un Uso Inmobiliario por ID
-        public async Task<UsoInmobiliario> ObtenerUsoInmobiliarioPorIdAsync(int id)
+        public async Task<Evento> ObtenerEventosPorIdAsync(int id)
         {
-            return await _context.UsoInmobiliarios
+            return await _context.Eventos
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
 
         // Actualizar un Uso Inmobiliario
-        public async Task<bool> ActualizarUsoInmobiliarioAsync(UsoInmobiliario usoInmobiliario)
+        public async Task<bool> ActualizarEventoAsync(Evento evento)
         {
-            var existingUsoInmobiliario = await _context.UsoInmobiliarios
-                .FirstOrDefaultAsync(u => u.Id == usoInmobiliario.Id);
+            var existingEvento = await _context.Eventos
+                .FirstOrDefaultAsync(u => u.Id == evento.Id);
 
-            if (existingUsoInmobiliario == null)
+            if (existingEvento == null)
             {
                 return false;
             }
 
             // Actualizamos los campos del uso inmobiliario
-            existingUsoInmobiliario.FechaSolicitud = usoInmobiliario.FechaSolicitud;
-            existingUsoInmobiliario.AreaSolicitante = usoInmobiliario.AreaSolicitante;
-            existingUsoInmobiliario.UsuarioSolicitante = usoInmobiliario.UsuarioSolicitante;
-            existingUsoInmobiliario.CatalogoId = usoInmobiliario.CatalogoId;
-            existingUsoInmobiliario.FechaInicio = usoInmobiliario.FechaInicio;
-            existingUsoInmobiliario.FechaFin = usoInmobiliario.FechaFin;
-            existingUsoInmobiliario.HorarioInicio = usoInmobiliario.HorarioInicio;
-            existingUsoInmobiliario.HorarioFin = usoInmobiliario.HorarioFin;
-            existingUsoInmobiliario.Estado = usoInmobiliario.Estado;
-            existingUsoInmobiliario.Observaciones = usoInmobiliario.Observaciones;
+            existingEvento.FechaSolicitud = evento.FechaSolicitud;
+            existingEvento.AreaSolicitante = evento.AreaSolicitante;
+            existingEvento.UsuarioSolicitante = evento.UsuarioSolicitante;
+            existingEvento.CatalogoId = evento.CatalogoId;
+            existingEvento.FechaInicio = evento.FechaInicio;
+            existingEvento.FechaFin = evento.FechaFin;
+            existingEvento.HorarioInicio = evento.HorarioInicio;
+            existingEvento.HorarioFin = evento.HorarioFin;
+            existingEvento.Estado = evento.Estado;
+            existingEvento.Observaciones = evento.Observaciones;
 
             await _context.SaveChangesAsync();
             return true;
         }
 
-        // Eliminar un Uso Inmobiliario
-        public async Task<bool> EliminarUsoInmobiliarioAsync(int id)
+        // Eliminar un Evento
+        public async Task<bool> EliminarEventoAsync(int id)
         {
-            var usoInmobiliario = await _context.UsoInmobiliarios
+            var evento = await _context.Eventos
                 .FirstOrDefaultAsync(u => u.Id == id);
 
-            if (usoInmobiliario == null)
+            if (evento == null)
             {
                 return false;
             }
 
-            _context.UsoInmobiliarios.Remove(usoInmobiliario);
+            _context.Eventos.Remove(evento);
             await _context.SaveChangesAsync();
             return true;
         }
