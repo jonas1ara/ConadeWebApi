@@ -19,7 +19,7 @@ public partial class Evento
 
     public string TipoServicio { get; set; } = null!;
 
-    public string Sala { get; set; } = null!;
+    public string? Sala { get; set; }
 
     public int CatalogoId { get; set; }
 

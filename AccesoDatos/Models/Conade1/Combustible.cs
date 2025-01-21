@@ -17,6 +17,10 @@ public partial class Combustible
 
     public string TipoSolicitud { get; set; } = null!;
 
+    public string TipoCombustible { get; set; } = null!;
+
+    public int Litros { get; set; }
+
     public int CatalogoId { get; set; }
 
     public string? DescripcionServicio { get; set; }

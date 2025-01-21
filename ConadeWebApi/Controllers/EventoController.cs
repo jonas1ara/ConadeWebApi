@@ -28,8 +28,9 @@ namespace ConadeWebApi.Controllers
             int usuarioSolicitante,
             string tipoSolicitud,
             string tipoServicio,
-            string sala,
+            string? sala,
             int catalogoId,
+            string descripcionServicio,
             string fechaInicio, // Usar string en lugar de DateOnly
             string? fechaFin,
             string horarioInicio, // Usar string en lugar de TimeOnly
@@ -59,6 +60,7 @@ namespace ConadeWebApi.Controllers
                     tipoServicio,
                     sala,
                     catalogoId,
+                    descripcionServicio,
                     fechaInicioDateOnly,
                     fechaFinDateOnly,
                     horarioInicioTimeOnly,

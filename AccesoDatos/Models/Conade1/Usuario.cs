@@ -29,6 +29,7 @@ public partial class Usuario
     public int IdEmpleado { get; set; }
 
     [JsonIgnore]
+
     public virtual ICollection<Combustible> Combustibles { get; set; } = new List<Combustible>();
 
     [JsonIgnore]

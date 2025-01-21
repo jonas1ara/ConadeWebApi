@@ -26,10 +26,11 @@ namespace ConadeWebApi.Controllers
             int areaSolicitante,
             int usuarioSolicitante,
             string tipoSolicitud,
+            string tipoCombustible,
+            int litros,
             int catalogoId,
             string? descripcionServicio,
             DateTime fecha,
-            int? areaId,
             string estado = "Solicitada",
             string? observaciones = null)
         {
@@ -44,10 +45,11 @@ namespace ConadeWebApi.Controllers
                     areaSolicitante,
                     usuarioSolicitante,
                     tipoSolicitud,
+                    tipoCombustible,
+                    litros,
                     catalogoId,
                     descripcionServicio,
                     fecha,
-                    areaId,
                     estado,
                     observaciones);
 

@@ -24,10 +24,11 @@ namespace AccesoDatos.Operations
                 int areaSolicitante,
                 int usuarioSolicitante,
                 string tipoSolicitud,
+                string tipoCombustible,
+                int litros,
                 int catalogoId,
                 string? descripcionServicio,
                 DateTime fecha,
-                int? areaId,
                 string estado,
                 string? observaciones = null)
         {
@@ -44,6 +45,12 @@ namespace AccesoDatos.Operations
                 throw new ArgumentException("El estado debe ser 'Solicitada', 'Atendida' o 'Rechazada'.");
             }
 
+            var combustiblesPermitidos = new[] { "Gasolina", "Diesel"};
+            if (!combustiblesPermitidos.Contains(tipoCombustible))
+            {
+                throw new ArgumentException("El tipo de combustible debe ser 'Gasolina' o 'Diesel'.");
+            }
+
             // Crear un nuevo objeto de combustible con los datos proporcionados
             var combustible = new Combustible
             {
@@ -52,10 +59,12 @@ namespace AccesoDatos.Operations
                 AreaSolicitante = areaSolicitante,
                 UsuarioSolicitante = usuarioSolicitante,
                 TipoSolicitud = tipoSolicitud,
+                TipoCombustible = tipoCombustible,
+                Litros = litros,
                 CatalogoId = catalogoId,
                 DescripcionServicio = descripcionServicio,
                 Fecha = fecha,
-                AreaId = areaId,
+                AreaId = 5,
                 Estado = estado,
                 Observaciones = observaciones
             };
