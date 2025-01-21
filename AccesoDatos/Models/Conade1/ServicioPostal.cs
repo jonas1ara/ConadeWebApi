@@ -21,7 +21,7 @@ public partial class ServicioPostal
 
     public int CatalogoId { get; set; }
 
-    public DateOnly FechaEnvio { get; set; }
+    public DateOnly? FechaEnvio { get; set; }
 
     public DateOnly? FechaRecepcion { get; set; }
 

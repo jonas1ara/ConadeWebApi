@@ -28,8 +28,8 @@ namespace ConadeWebApi.Controllers
                     string tipoSolicitud,
                     string tipoDeServicio,
                     int catalogoId,
-                    string fechaEnvio,   // Usar string en lugar de DateOnly
-                    string fechaRecepcionMaxima,  // Usar string en lugar de DateOnly
+                    string? fechaEnvio = null,   // Usar string en lugar de DateOnly
+                    string? fechaRecepcion = null,  // Usar string en lugar de DateOnly
                     string? descripcionServicio = null,
                     string estado = "Solicitada",
                     string? observaciones = null)
@@ -38,9 +38,21 @@ namespace ConadeWebApi.Controllers
 
             try
             {
+                // Verificar si las fechas son null antes de convertirlas
+                DateOnly? fechaEnvioDateOnly = null;
+                DateOnly? fechaRecepcionDateOnly = null;
+
                 // Convertir las fechas de string a DateOnly
-                DateOnly fechaEnvioDateOnly = DateOnly.Parse(fechaEnvio);
-                DateOnly fechaRecepcionMaximaDateOnly = DateOnly.Parse(fechaRecepcionMaxima);
+                if (!string.IsNullOrEmpty(fechaEnvio))
+                {
+                    fechaEnvioDateOnly = DateOnly.Parse(fechaEnvio);
+                }
+
+                if (!string.IsNullOrEmpty(fechaRecepcion))
+                {
+                    fechaRecepcionDateOnly = DateOnly.Parse(fechaRecepcion);
+                }
+
 
                 // Llamar al método de creación de servicio postal y obtener el ID del nuevo servicio postal
                 var idServicioPostal = await _dao.CrearServicioPostalAsync(
@@ -52,7 +64,7 @@ namespace ConadeWebApi.Controllers
                     tipoSolicitud,
                     catalogoId,
                     fechaEnvioDateOnly,
-                    fechaRecepcionMaximaDateOnly,
+                    fechaRecepcionDateOnly,
                     estado,
                     descripcionServicio,
                     observaciones);

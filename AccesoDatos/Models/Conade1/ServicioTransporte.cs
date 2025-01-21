@@ -21,7 +21,7 @@ public partial class ServicioTransporte
 
     public int CatalogoId { get; set; }
 
-    public DateOnly FechaTransporte { get; set; }
+    public DateOnly? FechaTransporte { get; set; }
 
     public DateOnly? FechaTransporteVuelta { get; set; }
 

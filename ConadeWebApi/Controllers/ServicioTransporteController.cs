@@ -29,7 +29,7 @@ namespace ConadeWebApi.Controllers
         string tipoSolicitud,
         string tipoDeServicio,
         int catalogoId,
-        string fechaTransporte, // Usar string en lugar de DateOnly
+        string? fechaTransporte, // Usar string en lugar de DateOnly
         string? fechaTransporteVuelta,
         string origen,
         string destino,
@@ -42,8 +42,19 @@ namespace ConadeWebApi.Controllers
             try
             {
                 // Convertir la fecha de string a DateOnly
-                DateOnly fechaTransporteDateOnly = DateOnly.Parse(fechaTransporte);
-                DateOnly? fechaTransporteVueltaDateOnly = DateOnly.Parse(fechaTransporteVuelta); ;
+                DateOnly? fechaTransporteDateOnly = null;
+                DateOnly? fechaTransporteVueltaDateOnly = null;
+
+                // Convertir las fechas de string a DateOnly
+                if (!string.IsNullOrEmpty(fechaTransporte))
+                {
+                    fechaTransporteDateOnly = DateOnly.Parse(fechaTransporte);
+                }
+
+                if (!string.IsNullOrEmpty(fechaTransporteVuelta))
+                {
+                    fechaTransporteVueltaDateOnly = DateOnly.Parse(fechaTransporteVuelta);
+                }
 
                 // Llamar al método de creación de servicio de transporte y obtener el ID del nuevo servicio
                 var idServicioTransporte = await _dao.CrearServicioTransporteAsync(

@@ -11,7 +11,6 @@ public partial class Area
     public string Nombre { get; set; } = null!;
 
     [JsonIgnore]
-
     public virtual ICollection<CatArea> CatAreas { get; set; } = new List<CatArea>();
 
     [JsonIgnore]

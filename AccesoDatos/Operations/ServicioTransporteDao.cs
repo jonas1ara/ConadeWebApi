@@ -26,7 +26,7 @@ namespace AccesoDatos.Operations
         string tipoDeServicio,
         string tipoSolicitud,
         int catalogoId,
-        DateOnly fechaTransporte,
+        DateOnly? fechaTransporte,
         DateOnly? fechaTransporteVuelta,
         string origen,
         string destino,

@@ -24,9 +24,9 @@ namespace AccesoDatos.Operations
                         string tipoDeServicio,
                         string tipoSolicitud,
                         int catalogoId,
-                        DateOnly fechaEnvio,
-                        DateOnly FechaRecepcion,
-                        string estado,
+                        DateOnly? fechaEnvio = null,
+                        DateOnly? FechaRecepcion = null,
+                        string estado = "Solicitda",
                         string? descripcionServicio = null,
                         string? observaciones = null)
         {

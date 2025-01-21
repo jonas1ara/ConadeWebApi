@@ -31,7 +31,7 @@ public partial class CatArea
     public string? Comentarios { get; set; }
 
     public virtual Area? Area { get; set; }
-
+    
     [JsonIgnore]
 
     public virtual ICollection<Combustible> CombustibleAreaSolicitanteNavigations { get; set; } = new List<Combustible>();

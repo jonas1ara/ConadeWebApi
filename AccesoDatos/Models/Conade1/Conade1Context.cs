@@ -45,7 +45,6 @@ public partial class Conade1Context : DbContext
             optionsBuilder.UseSqlServer(configuration.GetConnectionString("Conade1"));
         }
     }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Area>(entity =>
@@ -121,9 +120,9 @@ public partial class Conade1Context : DbContext
 
         modelBuilder.Entity<Evento>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Eventos__3214EC27E1406FC7");
+            entity.HasKey(e => e.Id).HasName("PK__Eventos__3214EC271E5FE432");
 
-            entity.HasIndex(e => e.NumeroDeSerie, "UQ__Eventos__584C2CBE25334A98").IsUnique();
+            entity.HasIndex(e => e.NumeroDeSerie, "UQ__Eventos__584C2CBE03090C5B").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.AreaId).HasColumnName("AreaID");
@@ -139,21 +138,21 @@ public partial class Conade1Context : DbContext
 
             entity.HasOne(d => d.Area).WithMany(p => p.Eventos)
                 .HasForeignKey(d => d.AreaId)
-                .HasConstraintName("FK__Eventos__AreaID__63CEACD4");
+                .HasConstraintName("FK__Eventos__AreaID__0EB90AD9");
 
             entity.HasOne(d => d.AreaSolicitanteNavigation).WithMany(p => p.EventoAreaSolicitanteNavigations)
                 .HasForeignKey(d => d.AreaSolicitante)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Eventos__AreaSol__60F24029");
+                .HasConstraintName("FK__Eventos__AreaSol__0BDC9E2E");
 
             entity.HasOne(d => d.Catalogo).WithMany(p => p.EventoCatalogos)
                 .HasForeignKey(d => d.CatalogoId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Eventos__Catalog__62DA889B");
+                .HasConstraintName("FK__Eventos__Catalog__0DC4E6A0");
 
             entity.HasOne(d => d.UsuarioSolicitanteNavigation).WithMany(p => p.Eventos)
                 .HasForeignKey(d => d.UsuarioSolicitante)
-                .HasConstraintName("FK__Eventos__Usuario__61E66462");
+                .HasConstraintName("FK__Eventos__Usuario__0CD0C267");
         });
 
         modelBuilder.Entity<Mantenimiento>(entity =>
@@ -199,11 +198,11 @@ public partial class Conade1Context : DbContext
 
         modelBuilder.Entity<ServicioPostal>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Servicio__3214EC277B37DBC1");
+            entity.HasKey(e => e.Id).HasName("PK__Servicio__3214EC270911E854");
 
             entity.ToTable("ServicioPostal");
 
-            entity.HasIndex(e => e.NumeroDeSerie, "UQ__Servicio__584C2CBEC2CDE0B5").IsUnique();
+            entity.HasIndex(e => e.NumeroDeSerie, "UQ__Servicio__584C2CBE19DF9934").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.AreaId).HasColumnName("AreaID");
@@ -219,30 +218,30 @@ public partial class Conade1Context : DbContext
 
             entity.HasOne(d => d.Area).WithMany(p => p.ServicioPostals)
                 .HasForeignKey(d => d.AreaId)
-                .HasConstraintName("FK__ServicioP__AreaI__0347582D");
+                .HasConstraintName("FK__ServicioP__AreaI__1936994C");
 
             entity.HasOne(d => d.AreaSolicitanteNavigation).WithMany(p => p.ServicioPostalAreaSolicitanteNavigations)
                 .HasForeignKey(d => d.AreaSolicitante)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ServicioP__AreaS__006AEB82");
+                .HasConstraintName("FK__ServicioP__AreaS__165A2CA1");
 
             entity.HasOne(d => d.Catalogo).WithMany(p => p.ServicioPostalCatalogos)
                 .HasForeignKey(d => d.CatalogoId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ServicioP__Catal__025333F4");
+                .HasConstraintName("FK__ServicioP__Catal__18427513");
 
             entity.HasOne(d => d.UsuarioSolicitanteNavigation).WithMany(p => p.ServicioPostals)
                 .HasForeignKey(d => d.UsuarioSolicitante)
-                .HasConstraintName("FK__ServicioP__Usuar__015F0FBB");
+                .HasConstraintName("FK__ServicioP__Usuar__174E50DA");
         });
 
         modelBuilder.Entity<ServicioTransporte>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Servicio__3214EC2711EC09C0");
+            entity.HasKey(e => e.Id).HasName("PK__Servicio__3214EC273FA1E949");
 
             entity.ToTable("ServicioTransporte");
 
-            entity.HasIndex(e => e.NumeroDeSerie, "UQ__Servicio__584C2CBE7BF04413").IsUnique();
+            entity.HasIndex(e => e.NumeroDeSerie, "UQ__Servicio__584C2CBE70794167").IsUnique();
 
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.AreaId).HasColumnName("AreaID");
@@ -260,21 +259,21 @@ public partial class Conade1Context : DbContext
 
             entity.HasOne(d => d.Area).WithMany(p => p.ServicioTransportes)
                 .HasForeignKey(d => d.AreaId)
-                .HasConstraintName("FK__ServicioT__AreaI__585CFA28");
+                .HasConstraintName("FK__ServicioT__AreaI__2E31B632");
 
             entity.HasOne(d => d.AreaSolicitanteNavigation).WithMany(p => p.ServicioTransporteAreaSolicitanteNavigations)
                 .HasForeignKey(d => d.AreaSolicitante)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ServicioT__AreaS__55808D7D");
+                .HasConstraintName("FK__ServicioT__AreaS__2B554987");
 
             entity.HasOne(d => d.Catalogo).WithMany(p => p.ServicioTransporteCatalogos)
                 .HasForeignKey(d => d.CatalogoId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__ServicioT__Catal__5768D5EF");
+                .HasConstraintName("FK__ServicioT__Catal__2D3D91F9");
 
             entity.HasOne(d => d.UsuarioSolicitanteNavigation).WithMany(p => p.ServicioTransportes)
                 .HasForeignKey(d => d.UsuarioSolicitante)
-                .HasConstraintName("FK__ServicioT__Usuar__5674B1B6");
+                .HasConstraintName("FK__ServicioT__Usuar__2C496DC0");
         });
 
         modelBuilder.Entity<Usuario>(entity =>
