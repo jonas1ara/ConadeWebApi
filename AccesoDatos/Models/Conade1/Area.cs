@@ -24,10 +24,12 @@ public partial class Area
     public virtual ICollection<Mantenimiento> Mantenimientos { get; set; } = new List<Mantenimiento>();
 
     [JsonIgnore]
+
     public virtual ICollection<ServicioPostal> ServicioPostals { get; set; } = new List<ServicioPostal>();
 
     [JsonIgnore]
     public virtual ICollection<ServicioTransporte> ServicioTransportes { get; set; } = new List<ServicioTransporte>();
+
 
     [JsonIgnore]
     public virtual ICollection<UsuarioArea> UsuarioAreas { get; set; } = new List<UsuarioArea>();

@@ -25,40 +25,65 @@ namespace ConadeWebApi.Controllers
             _dao = dao;
         }
 
+        public class UsuarioRequest
+        {
+            public string Nombre { get; set; }
+            public string ApellidoPaterno { get; set; }
+            public string ApellidoMaterno { get; set; }
+            public string ClaveEmpleado { get; set; }
+            public string NombreUsuario { get; set; }
+            public string Contrasena { get; set; }
+            public string Rol { get; set; }
+            public int[] AreasId { get; set; }
+        }
+
 
         [HttpPost("Crear")]
-        public async Task<IActionResult> CrearUsuario(string nombre, string apellidoPaterno, string apellidoMaterno, string claveEmpleado, string nombreUsuario, string contrasena, string rol, int[] areasId)
+        public async Task<IActionResult> CrearUsuario([FromBody] UsuarioRequest usuarioRequest)
         {
-            // Crear un objeto de respuesta
-            var respuesta = new Respuesta();
-
-            try
             {
-                // Llamar al método de creación de usuario y obtener el ID del nuevo usuario
-                var idUsuario = await _dao.CrearUsuarioAsync(nombre, apellidoPaterno, apellidoMaterno, claveEmpleado, nombreUsuario, contrasena, rol, areasId);
+                // Crear un objeto de respuesta
+                var respuesta = new Respuesta();
 
-                // Si el ID es nulo, el empleado no fue encontrado
-                if (idUsuario == null)
+                try
                 {
-                    respuesta.success = false;
-                    respuesta.mensaje = "Empleado no encontrado en la base de datos nominaO.";
-                    return NotFound(respuesta);
-                }
+                    // Llamar al método de creación de usuario y obtener el ID del nuevo usuario
+                    var idUsuario = await _dao.CrearUsuarioAsync(
+                        usuarioRequest.Nombre,
+                        usuarioRequest.ApellidoPaterno,
+                        usuarioRequest.ApellidoMaterno,
+                        usuarioRequest.ClaveEmpleado,
+                        usuarioRequest.NombreUsuario,
+                        usuarioRequest.Contrasena,
+                        usuarioRequest.Rol,
+                        usuarioRequest.AreasId
+                    );
 
-                // Si el ID es diferente de nulo, el usuario fue creado con éxito
-                respuesta.success = true;
-                respuesta.mensaje = "Usuario creado correctamente.";
-                respuesta.obj = idUsuario;
-                return Ok(respuesta);
-            }
-            catch (Exception ex)
-            {
-                // Si ocurre un error, devolver un StatusCode 500 con el mensaje de la excepción
-                respuesta.success = false;
-                respuesta.mensaje = ex.Message;
-                return StatusCode(500, respuesta); // Responde con un código de error 500
+                    // Si el ID es nulo, el empleado no fue encontrado
+                    if (idUsuario == null)
+                    {
+                        respuesta.success = false;
+                        respuesta.mensaje = "Empleado no encontrado en la base de datos nómina.";
+                        return NotFound(respuesta);
+                    }
+
+                    // Si el ID es diferente de nulo, el usuario fue creado con éxito
+                    respuesta.success = true;
+                    respuesta.mensaje = "Usuario creado correctamente.";
+                    respuesta.obj = idUsuario;
+                    return Ok(respuesta);
+                }
+                catch (Exception ex)
+                {
+                    // Si ocurre un error, devolver un StatusCode 500 con el mensaje de la excepción
+                    respuesta.success = false;
+                    respuesta.mensaje = ex.Message;
+                    return StatusCode(500, respuesta); // Responde con un código de error 500
+                }
             }
         }
+
+        
 
         [HttpGet("Login")]
         public async Task<IActionResult> Login(string nombreUsuario, string contrasena)
@@ -130,6 +155,73 @@ namespace ConadeWebApi.Controllers
                 return StatusCode(500, respuesta);
             }
         }
+
+        [HttpPut("Editar/{usuarioId}")]
+        public async Task<IActionResult> EditarUsuario(int usuarioId, [FromBody] UsuarioRequest usuarioRequest)
+        {
+            var respuesta = new Respuesta();
+
+            try
+            {
+                // Llamar al método de edición de usuario y obtener el ID del usuario actualizado
+                var idUsuario = await _dao.EditarUsuarioAsync(
+                    usuarioId,
+                    usuarioRequest.Nombre,
+                    usuarioRequest.ApellidoPaterno,
+                    usuarioRequest.ApellidoMaterno,
+                    usuarioRequest.NombreUsuario,
+                    usuarioRequest.Contrasena,
+                    usuarioRequest.Rol,
+                    usuarioRequest.AreasId
+                );
+
+                // Si el ID es nulo, significa que el usuario no fue encontrado
+                if (idUsuario == null)
+                {
+                    respuesta.success = false;
+                    respuesta.mensaje = "Usuario no encontrado.";
+                    return NotFound(respuesta);
+                }
+
+                // Si el usuario fue editado con éxito
+                respuesta.success = true;
+                respuesta.mensaje = "Usuario editado correctamente.";
+                respuesta.obj = idUsuario;
+                return Ok(respuesta);
+            }
+            catch (Exception ex)
+            {
+                // Si ocurre un error, se responde con un código de error 500
+                respuesta.success = false;
+                respuesta.mensaje = ex.Message;
+                return StatusCode(500, respuesta);
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> ObtenerUsuarioPorId(int id)
+        {
+            var respuesta = new Respuesta();
+
+            try
+            {
+                // Llamar al servicio para obtener el usuario por ID
+                var usuario = await _dao.ObtenerUsuarioPorIdAsync(id);
+
+                respuesta.success = true;
+                respuesta.mensaje = "Usuario encontrado.";
+                respuesta.obj = usuario; // Devolver el usuario encontrado
+                return Ok(respuesta);
+            }
+            catch (Exception ex)
+            {
+                respuesta.success = false;
+                respuesta.mensaje = ex.Message;
+                return StatusCode(500, respuesta); // Si ocurre un error, devolvemos el mensaje de la excepción
+            }
+        }
+
+
 
         [HttpGet("Listar")]
         public Respuesta Listar()

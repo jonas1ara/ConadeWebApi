@@ -14,6 +14,8 @@ public partial class Usuario
 
     public string ApellidoMaterno { get; set; } = null!;
 
+    public string ClaveEmpleado { get; set; } = null!;
+
     public string NombreUsuario { get; set; } = null!;
 
     public string Contrasena { get; set; } = null!;
@@ -24,23 +26,28 @@ public partial class Usuario
 
     public DateTime? FechaUltimoAcceso { get; set; }
 
-    public int? IdEmpleado { get; set; }
+    public int IdEmpleado { get; set; }
 
     [JsonIgnore]
     public virtual ICollection<Combustible> Combustibles { get; set; } = new List<Combustible>();
 
     [JsonIgnore]
+
     public virtual ICollection<Evento> Eventos { get; set; } = new List<Evento>();
 
     [JsonIgnore]
+
     public virtual ICollection<Mantenimiento> Mantenimientos { get; set; } = new List<Mantenimiento>();
 
     [JsonIgnore]
+
     public virtual ICollection<ServicioPostal> ServicioPostals { get; set; } = new List<ServicioPostal>();
 
     [JsonIgnore]
+
     public virtual ICollection<ServicioTransporte> ServicioTransportes { get; set; } = new List<ServicioTransporte>();
 
     [JsonIgnore]
+
     public virtual ICollection<UsuarioArea> UsuarioAreas { get; set; } = new List<UsuarioArea>();
 }

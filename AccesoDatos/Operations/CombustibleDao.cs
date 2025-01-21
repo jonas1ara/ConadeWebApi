@@ -32,9 +32,9 @@ namespace AccesoDatos.Operations
                 string? observaciones = null)
         {
             // Validar tipo de solicitud (debe ser 'Combustible')
-            if (tipoSolicitud != "Combustible")
+            if (tipoSolicitud != "Abastecimiento de Combustible")
             {
-                throw new ArgumentException("El tipo de solicitud debe ser 'Combustible'.");
+                throw new ArgumentException("El tipo de solicitud debe ser 'Abastecimiento de Combustible'.");
             }
 
             // Validar estado (debe ser uno de los valores permitidos)

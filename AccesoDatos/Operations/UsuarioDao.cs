@@ -81,6 +81,7 @@ namespace AccesoDatos.Operations
                 Nombre = nombre,
                 ApellidoPaterno = apellidoPaterno,
                 ApellidoMaterno = apellidoMaterno,
+                ClaveEmpleado = claveEmpleado,
                 NombreUsuario = nombreUsuario,
                 Contrasena = contrasena, // Guardar la contraseña como hash
                 Rol = rol,
@@ -126,6 +127,89 @@ namespace AccesoDatos.Operations
 
             return usuario; // Usuario autenticado
         }
+
+        public async Task<int?> EditarUsuarioAsync(
+                        int usuarioId,
+                        string nombre,
+                        string apellidoPaterno,
+                        string apellidoMaterno,
+                        string nombreUsuario,
+                        string contrasena,
+                        string rol,
+                        int[] areasId)
+        {
+            // Validar que las áreas estén entre 1 y 5
+            if (areasId == null || !areasId.Any() || areasId.Any(areaId => areaId < 1 || areaId > 5))
+            {
+                throw new Exception("Las áreas proporcionadas no son válidas. Asegúrate de que todas las áreas estén entre 1 y 5.");
+            }
+
+            // Verificar si el usuario existe
+            var usuarioExistente = await _conadeContext.Usuarios
+                .FirstOrDefaultAsync(u => u.Id == usuarioId);
+
+            if (usuarioExistente == null)
+            {
+                throw new Exception("El usuario no existe.");
+            }
+
+            // Verificar si ya existe otro usuario con el mismo nombre de usuario
+            if (await _conadeContext.Usuarios
+                .AnyAsync(u => u.NombreUsuario == nombreUsuario && u.Id != usuarioId))
+            {
+                throw new Exception("Ya existe un usuario con ese nombre de usuario.");
+            }
+
+            // Actualizar los campos del usuario
+            usuarioExistente.Nombre = nombre;
+            usuarioExistente.ApellidoPaterno = apellidoPaterno;
+            usuarioExistente.ApellidoMaterno = apellidoMaterno;
+            usuarioExistente.NombreUsuario = nombreUsuario;
+            usuarioExistente.Contrasena = contrasena; // Actualizar la contraseña como hash si es necesario
+            usuarioExistente.Rol = rol;
+
+            // Guardar los cambios del usuario
+            _conadeContext.Usuarios.Update(usuarioExistente);
+            await _conadeContext.SaveChangesAsync();
+
+            // Eliminar las áreas asociadas previamente
+            var areasExistentes = await _conadeContext.UsuarioAreas
+                .Where(ua => ua.UsuarioId == usuarioId)
+                .ToListAsync();
+
+            _conadeContext.UsuarioAreas.RemoveRange(areasExistentes);
+            await _conadeContext.SaveChangesAsync();
+
+            // Asignar las nuevas áreas
+            var usuarioAreas = areasId.Select(areaId => new UsuarioArea
+            {
+                UsuarioId = usuarioId,
+                AreaId = areaId,
+                FechaAsignacion = DateTime.Now
+            });
+
+            await _conadeContext.UsuarioAreas.AddRangeAsync(usuarioAreas);
+            await _conadeContext.SaveChangesAsync();
+
+            return usuarioExistente.Id; // Retorna el ID del usuario editado
+        }
+
+        public async Task<Usuario> ObtenerUsuarioPorIdAsync(int id)
+        {
+            // Buscar el usuario por el ID
+            var usuario = await _conadeContext.Usuarios
+                .Include(u => u.UsuarioAreas) // Incluir las áreas si es necesario
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (usuario == null)
+            {
+                throw new Exception("Usuario no encontrado.");
+            }
+
+            return usuario;
+        }
+
+
 
         public async Task<Empleado> ObtenerEmpleadoDesdeNominaO(string nombre, string apellidoPaterno, string apellidoMaterno, string claveEmpleado)
         {
